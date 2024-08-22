@@ -265,80 +265,218 @@ def salvar_contas(tipo,fornecedor,valor,dia,mes,ano):
 
     except NameError as erro:
 
-         messagebox.showinfo("Erro!", "Erro dados colocados de forma incorreta!")
+        messagebox.showinfo("Erro!", "Erro dados colocados de forma incorreta!")
         
     finally:
         conex.close()
 
 
 
-def exibir_informacoes_contas():
-    
-    # Cria uma nova janela Toplevel
-    janela_contas = ctk.CTkToplevel(tela)
-    janela_contas.title("Contas a Pagar")
-    janela_contas.geometry("1280x720")
-    label_filtro_tipo = ctk.CTkLabel(tela, text="Qual o tipo de conta deseja ver?")
-    entry_filtro_tipo = ctk.CTkEntry(tela, placeholder_text="Energia, Advogado, etc...",  placeholder_text_color='gray')
 
-    # Conectar ao banco de dados e recuperar as contas
-    conex = sqlite3.connect('Banco_de_Dados.db')
+
+def salvar_contas(tipo,fornecedor,valor,dia,mes,ano):
+    
+    db_path = 'Banco_de_Dados.db'
+
+    conex = sqlite3.connect(db_path)
     cursor = conex.cursor()
-    cursor.execute("SELECT * FROM Contas")
-    contas = cursor.fetchall()
-    conex.close()
 
-    ctk.CTkLabel(janela_contas,text="Selecione as contas que deseja pagar").place(x=200,y=20)
-    frame_contas = ctk.CTkFrame(janela_contas)
-    frame_contas.pack(padx=20, pady=20, fill="both", expand=True)
+    cursor.execute('''
+                CREATE TABLE IF NOT EXISTS Contas (
+                tipo TEXT PRIMARY KEY NOT NULL,
+                fornecedor TEXT NOT NULL,
+                valor FLOAT NOT NULL,
+                data_pg TEXT NOT NULL
+                );           
+    ''')
 
-    
-    checkboxes = []
-    headers = ["  Pago "," Tipo ", " Fornecedor ", " Valor ", " Data "]
-
-    for col, header in enumerate(headers):
-        ctk.CTkLabel(frame_contas, text=header, font=('Arial Bold', 12)).grid(row=0, column=col, padx= 5,pady=5)
-
-    for i, conta in enumerate(contas, start=1):
-
-        check = ctk.IntVar()
-        checkbox = ctk.CTkCheckBox(frame_contas,text="",width=25,variable=check)
-        checkbox.grid(row=i,column=0)
-        checkboxes.append((check, (conta[0], conta[2])))
-
-        for j, valor in enumerate(conta, start=1):
-            ctk.CTkLabel(frame_contas, text=str(valor)).grid(row=i, column=j)
-            
-
-    def marcar_pagamento():
-        conex = sqlite3.connect('Banco_de_Dados.db')
-        cursor = conex.cursor()
+    try:
         
-        for check, (tipo, valor) in checkboxes:
-            if check.get() == 1: 
-
-                arquivo = "saldo.json"
-                with open(arquivo, 'r') as f:
-                    dados = json.load(f)
-                    saldo = dados.get('saldo', 0)
-                
-                saida = valor
-                novo_saldo = saldo - saida
-                
-                cursor.execute("DELETE FROM Contas WHERE tipo=?", (tipo,))
-                with open(arquivo, 'w') as f:
-                    json.dump({'saldo': novo_saldo}, f)
-
-                    
+        data = get_combined_date(dia,mes,ano)
+        
+        cursor.execute('''
+            INSERT INTO Contas (tipo,fornecedor,valor,data_pg)
+            VALUES (?,?,?,?)
+            ''',(tipo,fornecedor,valor,data))
         
         conex.commit()
+        messagebox.showinfo("Sucesso!", "Dados enviados ao banco de dados com sucesso!")
+
+    except NameError as erro:
+
+        messagebox.showinfo("Erro!", "Erro dados colocados de forma incorreta!")
+        
+    finally:
         conex.close()
-        janela_contas.destroy()  # Fecha a janela de contas após salvar as alterações
-        messagebox.showinfo("Sucesso", "Contas pagas e removidas com sucesso!")
 
-    botao_pagar_contas = ctk.CTkButton(frame_contas, text="Pagar Contas", command=marcar_pagamento)
-    botao_pagar_contas.grid(row=i+1,column=2)
 
+
+
+
+
+def exibir_informacoes_contas():
+    
+    janela_contas = ctk.CTkToplevel(tela)
+    janela_contas.title("Contas a Pagar")
+    janela_contas.geometry("900x500+200+300")
+    janela_contas.attributes('-topmost', True) # Força a janela a estar sempre no topo
+    
+
+    main_frame = ctk.CTkFrame(janela_contas,fg_color="transparent")
+    main_frame.pack(fill="both", expand=True)
+
+    left_frame = ctk.CTkFrame(main_frame,fg_color="transparent")
+    left_frame.pack(side="left", fill="y")
+    
+    ctk.CTkLabel(left_frame,text="Tipo de conta",font=('Arial Bold', 15)).place(x=40, y=20)
+    entry_filtro_conta = ctk.CTkEntry(left_frame, placeholder_text="Energia, Aluguel, etc..", placeholder_text_color="grey")
+    entry_filtro_conta.place(x=40, y=55)
+   
+    frame_contas = ctk.CTkScrollableFrame(main_frame)
+    frame_contas.pack(side="right", fill="both", expand=True, padx=(0, 20))
+
+
+
+
+    def exibir_todas_contas():
+
+        for widget in frame_contas.winfo_children():
+            widget.destroy()
+
+        conex = sqlite3.connect('Banco_de_Dados.db')
+        cursor = conex.cursor()
+        cursor.execute("SELECT * FROM Contas")
+        contas = cursor.fetchall()
+        conex.close()
+
+        checkboxes = []
+        headers = ["  Pago "," Tipo ", " Fornecedor ", " Valor ", " Data "]
+
+        for col, header in enumerate(headers):
+            ctk.CTkLabel(frame_contas, text=header, font=('Arial Bold', 12)).grid(row=0, column=col, padx= 5,pady=5)
+
+        for i, conta in enumerate(contas, start=1):
+
+            check = ctk.IntVar()
+            checkbox = ctk.CTkCheckBox(frame_contas,text="",width=25,variable=check)
+            checkbox.grid(row=i,column=0)
+            checkboxes.append((check, (conta[0], conta[2])))
+
+            for j, valor in enumerate(conta, start=1):
+                ctk.CTkLabel(frame_contas, text=str(valor)).grid(row=i, column=j)
+                
+
+        def marcar_pagamento():
+            conex = sqlite3.connect('Banco_de_Dados.db')
+            cursor = conex.cursor()
+            
+            for check, (tipo, valor) in checkboxes:
+                if check.get() == 1: 
+
+                    arquivo = "saldo.json"
+                    with open(arquivo, 'r') as f:
+                        dados = json.load(f)
+                        saldo = dados.get('saldo', 0)
+                    
+                    saida = valor
+                    novo_saldo = saldo - saida
+                    
+                    cursor.execute("DELETE FROM Contas WHERE tipo=?", (tipo,))
+                    with open(arquivo, 'w') as f:
+                        json.dump({'saldo': novo_saldo}, f)
+
+                        
+            
+            conex.commit()
+            conex.close()
+            janela_contas.destroy()  # Fecha a janela de contas após salvar as alterações
+            messagebox.showinfo("Sucesso", "Contas pagas e removidas com sucesso!")
+
+        botao_pagar_contas = ctk.CTkButton(frame_contas, text="Pagar Contas", command=marcar_pagamento)
+        botao_pagar_contas.grid(row=i+1,column=2)
+
+    botao_todas_contas = ctk.CTkButton(left_frame, text="Todas as contas", command=exibir_todas_contas)
+    botao_todas_contas.place(x=40,y=140)
+
+
+
+
+
+
+    def filtro_contas(tipo):
+
+        for widget in frame_contas.winfo_children():
+            widget.destroy()
+        
+        conex = sqlite3.connect('Banco_de_Dados.db')
+        cursor = conex.cursor()
+
+        try:
+            cursor.execute("SELECT * FROM Contas WHERE tipo = ?", (tipo,))
+
+
+            contas = cursor.fetchall()
+            conex.close()
+
+
+            checkboxes = []
+            headers = ["  Pago "," Tipo ", " Fornecedor ", " Valor ", " Data "]
+
+            for col, header in enumerate(headers):
+                    ctk.CTkLabel(frame_contas, text=header, font=('Arial Bold', 12)).grid(row=0, column=col, padx= 5,pady=5)
+
+            for i, conta in enumerate(contas, start=1):
+
+                check = ctk.IntVar()
+                checkbox = ctk.CTkCheckBox(frame_contas,text="",width=25,variable=check)
+                checkbox.grid(row=i,column=0)
+                checkboxes.append((check, (conta[0], conta[2])))
+
+                for j, valor in enumerate(conta, start=1):
+                        ctk.CTkLabel(frame_contas, text=str(valor)).grid(row=i, column=j)
+
+            def marcar_pagamento():
+                conex = sqlite3.connect('Banco_de_Dados.db')
+                cursor = conex.cursor()
+                    
+                for check, (tipo, valor) in checkboxes:
+                    if check.get() == 1: 
+
+                        arquivo = "saldo.json"
+                        with open(arquivo, 'r') as f:
+                            dados = json.load(f)
+                            saldo = dados.get('saldo', 0)
+                            
+                        saida = valor
+                        novo_saldo = saldo - saida
+                            
+                        cursor.execute("DELETE FROM Contas WHERE tipo=?", (tipo,))
+                        with open(arquivo, 'w') as f:
+                            json.dump({'saldo': novo_saldo}, f)
+
+                conex.commit()
+                conex.close()
+                janela_contas.destroy()  
+                messagebox.showinfo("Sucesso", "Contas pagas e removidas com sucesso!")
+
+
+            botao_pagar_contas = ctk.CTkButton(frame_contas, text="Pagar Contas", command=marcar_pagamento)
+            botao_pagar_contas.grid(row=i+1,column=2)
+
+        except UnboundLocalError:
+            messagebox.showinfo("Erro!", f"Tipo: {tipo} não encontrado no Banco de Dados! Lembre-se de Digitar o Tipo da conta exatamente da mesma forma que ele foi cadastrado.")
+        
+        finally:
+            conex.close()
+
+    
+    botao_filtrar_contas = ctk.CTkButton(left_frame, text="Filtrar", command=lambda:filtro_contas(entry_filtro_conta.get()))
+    botao_filtrar_contas.place(x=40,y=90)
+
+        
+        
+
+        
 
 
 
@@ -515,6 +653,7 @@ tela = ctk.CTk()
 tela.title('Sistema Imobiliaria')
 tela.geometry('1366x768')
 ctk.set_appearance_mode("light")
+    
 
 frame_corretores = ctk.CTkFrame(tela, fg_color="transparent")
 frame_corretores.pack(padx=10, pady=10, fill='both', expand=True)
