@@ -5,7 +5,10 @@ from tkinter import ttk
 import customtkinter as ctk
 from tkinter import messagebox
 import json
-
+import random
+from functools import partial
+from PIL import Image, ImageTk
+import io
 
 
 
@@ -16,13 +19,13 @@ def solicitar_saldo(arquivo='saldo.json'):
         global entry_saldo
         global botao_salvar_saldo
         label_inicial = ctk.CTkLabel(tela, text='Valor inicial do saldo')
-        label_inicial.place(x=420,y=80)
+        label_inicial.place(x=620,y=80)
         entry_saldo = ctk.CTkEntry(tela)
-        entry_saldo.place(x=420,y=110)
+        entry_saldo.place(x=620,y=110)
 
         botao_salvar_saldo = ctk.CTkButton(tela, text='Salvar saldo inicial', 
                                                 command=lambda: salvar_saldo(entry_saldo.get(), arquivo))
-        botao_salvar_saldo.place(x=420, y=140)
+        botao_salvar_saldo.place(x=620, y=140)
 
     else:
         global label_saldo
@@ -39,18 +42,18 @@ def solicitar_saldo(arquivo='saldo.json'):
             if saldo_existente is not None:
 
                 label_saldo = ctk.CTkLabel(tela, text=f"Saldo: R${saldo_existente}", font=('Arial Bold', 15))
-                label_saldo.place(x=420,y=80)
+                label_saldo.place(x=620,y=80)
 
                 label_alterar = ctk.CTkLabel(tela, text="Alterar o Saldo?",font=('Arial Bold', 15))
-                label_alterar.place(x=420,y=140)
+                label_alterar.place(x=620,y=140)
 
                 entry_alterar = ctk.CTkEntry(tela,placeholder_text="Novo Saldo",placeholder_text_color='gray')
-                entry_alterar.place(x=420,y=180)
+                entry_alterar.place(x=620,y=180)
 
                 botao_alterar = ctk.CTkButton(tela, text="Alterar saldo",
                                               command=lambda:(alterar_saldo(entry_alterar.get(),arquivo='saldo.json'),
                                                              solicitar_saldo(arquivo='saldo.json')) )
-                botao_alterar.place(x=420,y=240)
+                botao_alterar.place(x=620,y=240)
 
 
             else:
@@ -116,14 +119,18 @@ def salvar_dados_clientes():
                 tipo TEXT NOT NULL,
                 valor FLOAT,
                 royalties FLOAT,
-                comissao FLOAT,
                 calcao FLOAT,
                 nome_locador TEXT NOT NULL,
                 nome_locatario TEXT NOT NULL,
                 data TEXT NOT NULL,
                 corretor1 TEXT NOT NULL,
+                comissao1 FLOAT,
                 corretor2 TEXT,
-                corretor3 TEXT
+                comissao2 FLOAT,
+                corretor3 TEXT,
+                comissao3 FLOAT,
+                corretor4 TEXT,
+                comissao4 FLOAT
                 );           
         
     ''')
@@ -138,7 +145,7 @@ def salvar_dados_clientes():
         valor = 0
     
     royalties = entry_royal.get()
-    comissao = entry_comissao.get()
+
 
     if tipo == "Aluguel":
         calcao = valor_calcao.get()
@@ -153,20 +160,31 @@ def salvar_dados_clientes():
         Corretor1 = corretor1.get() if isinstance(corretor1, ctk.CTkEntry) else corretor1
         Corretor2 = corretor2.get() if isinstance(corretor2, ctk.CTkEntry) else corretor2
         Corretor3 = corretor3.get() if isinstance(corretor3, ctk.CTkEntry) else corretor3
+        Corretor4 = corretor4.get() if isinstance(corretor4, ctk.CTkEntry) else corretor4
+
+        Comissao1 = comissao1.get() if isinstance(comissao1, ctk.CTkEntry) else comissao1
+        Comissao2 = comissao2.get() if isinstance(comissao2, ctk.CTkEntry) else comissao2
+        Comissao3 = comissao3.get() if isinstance(comissao3, ctk.CTkEntry) else comissao3
+        Comissao4 = comissao4.get() if isinstance(comissao4, ctk.CTkEntry) else comissao4
+        calcao=0
 
         cursor.execute('''
         INSERT INTO Clientes (  id,tipo,valor,royalties,
-                                comissao,calcao,nome_locador,
-                                nome_locatario,data,corretor1,corretor2,corretor3)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?)
-        ''',(Id,tipo,valor,royalties,comissao,calcao,Nome_locador,Nome_locatario,Data,Corretor1,Corretor2,Corretor3))
+                                calcao,nome_locador,nome_locatario,data, 
+                                corretor1,comissao1, corretor2,comissao2,
+                                corretor3,comissao3, corretor4,comissao4
+                                )
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        ''',(Id,tipo,valor,royalties,calcao,Nome_locador,Nome_locatario,Data, 
+            Corretor1,Comissao1, Corretor2,Comissao2, Corretor3,Comissao3,
+            Corretor4,Comissao4))
 
         conex.commit()
         messagebox.showinfo("Sucesso!", "Dados enviados ao banco de dados com sucesso!")
 
-    except NameError as erro:
+    #except NameError as erro:
 
-         messagebox.showinfo("Erro!", "É necessário definir ao menos 1 corretor por ID!")
+         #messagebox.showinfo("Erro!", "É necessário definir ao menos 1 corretor por ID!")
         
     finally:
         conex.close()
@@ -175,139 +193,331 @@ def salvar_dados_clientes():
 
 
 
+## FUNÇOES USADAS NA CRIAÇAO DE CONTAS
+
+def mostrar_contas(nome_tabela, filtro, valor_filtro, frame, janela):
+
+    try:
+        for widget in frame.winfo_children():
+            widget.destroy()
+
+
+        conex = sqlite3.connect('Banco_de_Dados.db')
+        cursor = conex.cursor()
+
+        if nome_tabela == "Todas":
+
+            cursor.execute(f'''
+            SELECT * FROM Contas WHERE {filtro} = ?
+            UNION
+            SELECT * FROM ContasPagas WHERE {filtro} = ?
+            ''', (valor_filtro, valor_filtro))
+
+            if filtro == "data_pg":
+
+                cursor.execute(f'''
+                SELECT * FROM Contas WHERE substr(data_pg, 4, 2) = ?
+                UNION
+                SELECT * FROM ContasPagas WHERE substr(data_pg, 4, 2) = ?
+                ''', (valor_filtro, valor_filtro))
+
+
+        elif filtro == None or valor_filtro == None:
+            cursor.execute(f"SELECT * FROM {nome_tabela}")
+
+        elif filtro == "data_pg":
+
+            cursor.execute(f'''
+            SELECT * FROM {nome_tabela}
+            WHERE substr(data_pg, 4, 2) = ? 
+            ''', (valor_filtro,))
+
+        else:
+            cursor.execute(f"SELECT * FROM {nome_tabela} WHERE {filtro} = ?", (valor_filtro,))
+
+        contas = cursor.fetchall()
+        conex.close()
+
+        checkboxes = []
+        headers = ["  Pago "," ID ", " Tipo ", " Fornecedor ", " Valor ", " Data "]
+
+        for col, header in enumerate(headers):
+            ctk.CTkLabel(frame, text=header, font=('Arial Bold', 12)).grid(row=0, column=col, padx=15,pady=10)
+
+        for i, conta in enumerate(contas, start=1):
+
+            check = ctk.IntVar()
+            checkbox = ctk.CTkCheckBox(frame,text="",width=25,variable=check)
+            checkbox.grid(row=i,column=0)
+            checkboxes.append((check, conta))
+
+            for j, valor in enumerate(conta, start=1):
+                ctk.CTkLabel(frame, text=str(valor)).grid(row=i, column=j)
+                
+
+        def marcar_pagamento():
+            conex = sqlite3.connect('Banco_de_Dados.db')
+            cursor = conex.cursor()
+
+            for check, conta in checkboxes:
+                if check.get() == 1: 
+                    id, tipo, fornecedor, valor, data_pg = conta    
+
+                    arquivo = "saldo.json"
+                    with open(arquivo, 'r') as f:
+                        dados = json.load(f)
+                        saldo = dados.get('saldo', 0)
+                    
+                    saida = valor
+                    novo_saldo = saldo - saida
+
+                    id_pago = gerar_id("PG" + id[:3])
+                    cursor.execute('''
+                    INSERT INTO ContasPagas(id,tipo,fornecedor,valor,data_pg)
+                    VALUES (?,?,?,?,?)
+                    ''',(id_pago, tipo, fornecedor, valor, data_pg))
+        
+
+                    cursor.execute("DELETE FROM Contas WHERE id=?", (id,))
+                    with open(arquivo, 'w') as f:
+                        json.dump({'saldo': novo_saldo}, f)
+            
+            
+            conex.commit()
+            conex.close()
+            messagebox.showinfo("Sucesso", "Contas pagas com sucesso!", parent=janela)
+
+
+        def deletar_contas():
+            conex = sqlite3.connect('Banco_de_Dados.db')
+            cursor = conex.cursor()
+            for check, conta in checkboxes:
+                if check.get() == 1: 
+                    id, tipo, fornecedor, valor, data_pg = conta 
+
+                    cursor.execute("DELETE FROM ContasPagas WHERE id=?", (id,))
+
+            conex.commit()
+            conex.close()
+            messagebox.showinfo("Sucesso", "Contas removidas com sucesso!", parent=janela)
+            
+
+
+
+        if nome_tabela == "Contas":
+            botao_pagar_contas = ctk.CTkButton(frame, text="Pagar Contas", command=marcar_pagamento)
+            botao_pagar_contas.grid(row=i+1,column=2)
+
+        if nome_tabela == "ContasPagas":
+            botao_deletar = ctk.CTkButton(frame, text="Deletar Contas", command=deletar_contas)
+            botao_deletar.grid(row=i+1,column=2)
+
+    except UnboundLocalError:
+    
+        messagebox.showinfo("Erro!", "Não há contas nessa sessão!",parent=janela)
+
+    finally:
+    
+        conex.close()
+
+
+
+
+
+def destruir_widgets(frame):
+    
+    for widget in frame.winfo_children():
+        widget.destroy()
+
 
 
 def get_combined_date(day, month, year):
     try:
-        # Formatar a data no formato DD/MM/AAAA
-        date_str = f"{day.zfill(2)}/{month.zfill(2)}/{year.zfill(4)}"
-        # Validar e converter a string em um objeto datetime
+        date_str = f"{int(day):02d}/{int(month):02d}/{int(year)}"
         return date_str
     except ValueError:
         return "Data inválida"
     
 
 
+def gerar_id(tipo_conta):
+    db_path = 'Banco_de_Dados.db'
+    conex = sqlite3.connect(db_path)
+    cursor = conex.cursor()
+    prefixo = tipo_conta[:3].upper()
+    
+    while True:
+        sufixo = f"{random.randint(1000, 9999)}"
+    
+        novo_id = f"{prefixo}{sufixo}"
 
-
+        cursor.execute(f"SELECT COUNT(1) FROM Contas WHERE id = ?", (novo_id,))
+        if cursor.fetchone()[0] == 0:
+            conex.close()
+            return novo_id
 
 
 def criar_contas():
 
     label_tipoc = ctk.CTkLabel(tela, text="Tipo de conta", font=('Arial Bold', 15))
-    label_tipoc.place(x=600, y=80)
+    label_tipoc.place(x=900, y=80)
 
     conta_entry = ctk.CTkEntry(tela, placeholder_text="Energia, Aluguel, Etc...",placeholder_text_color='gray')
-    conta_entry.place(x=600,y=110)
+    conta_entry.place(x=900,y=110)
 
     label_fornecedorc = ctk.CTkLabel(tela, text="Fornecedor", font=('Arial Bold', 15))
-    label_fornecedorc.place(x=600, y=140)
+    label_fornecedorc.place(x=900, y=140)
 
     fornecedor_entry = ctk.CTkEntry(tela)
-    fornecedor_entry.place(x=600,y=170)
+    fornecedor_entry.place(x=900,y=170)
 
     label_valorc = ctk.CTkLabel(tela, text="Valor Conta", font=('Arial Bold', 15))
-    label_valorc.place(x=600, y=200)
+    label_valorc.place(x=900, y=200)
 
     valor_entry = ctk.CTkEntry(tela)
-    valor_entry.place(x=600,y=230)
+    valor_entry.place(x=900,y=230)
 
     label_datac = ctk.CTkLabel(tela, text="Data de Vencimento", font=('Arial Bold', 15))
-    label_datac.place(x=600, y=260)
+    label_datac.place(x=900, y=260)
 
     dia_entry = ctk.CTkEntry(tela, width=50, placeholder_text='Dia', placeholder_text_color='gray')
-    dia_entry.place(x=600,y=290)
+    dia_entry.place(x=900,y=290)
     mes_entry = ctk.CTkEntry(tela, width=50, placeholder_text='Mes', placeholder_text_color='gray')
-    mes_entry.place(x=660,y=290)  
+    mes_entry.place(x=960,y=290)  
     ano_entry = ctk.CTkEntry(tela, width=50, placeholder_text='Ano', placeholder_text_color='gray')
-    ano_entry.place(x=720,y=290)
+    ano_entry.place(x=1020,y=290)
+    label_ask = ctk.CTkLabel(tela,text="Deseja repetir esta conta para próximos meses?", font=('Arial Bold', 15))
+    label_ask.place(x=900, y=330)
+
+
+
+    frame_ask= ctk.CTkFrame(tela,fg_color="transparent",width=350)
+    frame_ask.place(x=900,y=420)
+
+    def ask_eventos(selected_value):
+        
+        destruir_widgets(frame_ask)
+
+        global entry_quantidade_mes
+        
+        if selected_value == "Sim":
+
+            ctk.CTkLabel(frame_ask, text="Quantos meses a frente?",font=('Arial Bold', 15)).place(x=0, y=0)
+            entry_quantidade_mes = ctk.CTkEntry(frame_ask,width=60, placeholder_text="1,2,3...", placeholder_text_color="gray")
+            entry_quantidade_mes.place(x=180, y=0)
+
+
+
+        if selected_value == "Não":
+            global meses_a_frente
+            meses_a_frente = 0
+    
+
 
     botao_salvar_contas = ctk.CTkButton(tela,text="Salvar", command=lambda:salvar_contas(
         conta_entry.get(), fornecedor_entry.get(),
         valor_entry.get(), dia_entry.get(),
         mes_entry.get(), ano_entry.get()))
     
-    botao_salvar_contas.place(x=600,y=340)
+    botao_salvar_contas.place(x=900,y=480)
 
+    def on_option_change_ask(choice):
+        global selected_value
+        selected_value = choice
+        ask_eventos(selected_value)
 
-
-
-
-
-
-def salvar_contas(tipo,fornecedor,valor,dia,mes,ano):
-    
-    db_path = 'Banco_de_Dados.db'
-
-    conex = sqlite3.connect(db_path)
-    cursor = conex.cursor()
-
-    cursor.execute('''
-                CREATE TABLE IF NOT EXISTS Contas (
-                tipo TEXT PRIMARY KEY NOT NULL,
-                fornecedor TEXT NOT NULL,
-                valor FLOAT NOT NULL,
-                data_pg TEXT NOT NULL
-                );           
-    ''')
-
-    try:
-        
-        data = get_combined_date(dia,mes,ano)
-        
-        cursor.execute('''
-            INSERT INTO Contas (tipo,fornecedor,valor,data_pg)
-            VALUES (?,?,?,?)
-            ''',(tipo,fornecedor,valor,data))
-        
-        conex.commit()
-        messagebox.showinfo("Sucesso!", "Dados enviados ao banco de dados com sucesso!")
-
-    except NameError as erro:
-
-        messagebox.showinfo("Erro!", "Erro dados colocados de forma incorreta!")
-        
-    finally:
-        conex.close()
-
-
+    yes_no_options = ["Sim", "Não"]
+    yes_no_menu = ctk.CTkOptionMenu(    
+    master=tela, 
+    values=yes_no_options, 
+    command=on_option_change_ask,
+    dropdown_font=("Arial", 12),  
+    button_color="lightblue",  
+    dropdown_fg_color="#3c8cd4",
+    dropdown_text_color="white"
+    )
+    yes_no_menu.place(x=900,y=370)
 
 
 
 def salvar_contas(tipo,fornecedor,valor,dia,mes,ano):
-    
-    db_path = 'Banco_de_Dados.db'
 
-    conex = sqlite3.connect(db_path)
-    cursor = conex.cursor()
-
-    cursor.execute('''
-                CREATE TABLE IF NOT EXISTS Contas (
-                tipo TEXT PRIMARY KEY NOT NULL,
-                fornecedor TEXT NOT NULL,
-                valor FLOAT NOT NULL,
-                data_pg TEXT NOT NULL
-                );           
-    ''')
-
-    try:
+    if selected_value == "Sim":
+        meses_a_frente = int(entry_quantidade_mes.get())
         
-        data = get_combined_date(dia,mes,ano)
-        
-        cursor.execute('''
-            INSERT INTO Contas (tipo,fornecedor,valor,data_pg)
-            VALUES (?,?,?,?)
-            ''',(tipo,fornecedor,valor,data))
-        
-        conex.commit()
-        messagebox.showinfo("Sucesso!", "Dados enviados ao banco de dados com sucesso!")
+    else:
+        meses_a_frente = 0
 
-    except NameError as erro:
+    if meses_a_frente > 12:
 
-        messagebox.showinfo("Erro!", "Erro dados colocados de forma incorreta!")
-        
-    finally:
+        messagebox.showinfo("Erro!", "Não é possível adicionar a mesma conta para mais de 12 meses!")
         conex.close()
+
+    else:      
+        i=0
+        while meses_a_frente >= 0:
+            db_path = 'Banco_de_Dados.db'
+            conex = sqlite3.connect(db_path)
+            cursor = conex.cursor()
+    
+
+            cursor.execute('''
+                        CREATE TABLE IF NOT EXISTS Contas (
+                        id TEXT PRIMARY KEY NOT NULL,
+                        tipo TEXT NOT NULL,
+                        fornecedor TEXT NOT NULL,
+                        valor FLOAT NOT NULL,
+                        data_pg TEXT NOT NULL
+                        );           
+            ''')
+
+            cursor.execute('''
+                            CREATE TABLE IF NOT EXISTS ContasPagas (
+                            id TEXT PRIMARY KEY NOT NULL,
+                            tipo TEXT NOT NULL,
+                            fornecedor TEXT NOT NULL,
+                            valor FLOAT NOT NULL,
+                            data_pg TEXT NOT NULL
+                            );           
+                            ''')
+
+                    
+            id=gerar_id(tipo)
+
+            conex = sqlite3.connect(db_path)
+            cursor = conex.cursor()
+            try:
+
+                mes = int(mes)
+
+                if mes > 12:
+                    mes = 1
+                    ano = int(ano) + 1
+                    data = get_combined_date(dia,mes,ano)
+
+                else:
+                    mes = int(mes)
+                    data = get_combined_date(dia,mes,ano)
+                
+                cursor.execute('''
+                    INSERT INTO Contas (id,tipo,fornecedor,valor,data_pg)
+                    VALUES (?,?,?,?,?)
+                    ''',(id,tipo,fornecedor,valor,data))
+                
+                conex.commit()
+                i+=1
+                meses_a_frente -= 1
+                mes += 1
+
+            except NameError as erro:
+
+                messagebox.showinfo("Erro!", "Erro dados colocados de forma incorreta!")
+                
+            finally:
+                conex.close()
+
+        messagebox.showinfo("Sucesso!", "Dados enviados ao banco de dados com sucesso!")
+        
 
 
 
@@ -318,7 +528,7 @@ def exibir_informacoes_contas():
     
     janela_contas = ctk.CTkToplevel(tela)
     janela_contas.title("Contas a Pagar")
-    janela_contas.geometry("900x500+200+300")
+    janela_contas.geometry("1000x500+200+300")
     janela_contas.attributes('-topmost', True) # Força a janela a estar sempre no topo
     
 
@@ -328,161 +538,127 @@ def exibir_informacoes_contas():
     left_frame = ctk.CTkFrame(main_frame,fg_color="transparent")
     left_frame.pack(side="left", fill="y")
     
-    ctk.CTkLabel(left_frame,text="Tipo de conta",font=('Arial Bold', 15)).place(x=40, y=20)
-    entry_filtro_conta = ctk.CTkEntry(left_frame, placeholder_text="Energia, Aluguel, etc..", placeholder_text_color="grey")
-    entry_filtro_conta.place(x=40, y=55)
-   
     frame_contas = ctk.CTkScrollableFrame(main_frame)
     frame_contas.pack(side="right", fill="both", expand=True, padx=(0, 20))
 
+    ctk.CTkLabel(left_frame, text="Exibir Todas:",font=('Poppins Bold', 15), text_color= "#484E55").place(x=40, y=20)
 
+    botao_todas_contas = ctk.CTkButton(left_frame, text="Contas a Pagar", command=lambda:mostrar_contas("Contas", None, None, frame_contas, janela_contas))
+    botao_todas_contas.place(x=40,y=50)
 
+    botao_exibir_pagas = ctk.CTkButton(left_frame, text="Contas pagas", command=lambda:mostrar_contas("ContasPagas", None, None, frame_contas, janela_contas))
+    botao_exibir_pagas.place(x=40,y=100)
 
-    def exibir_todas_contas():
+    label_filtro = ctk.CTkLabel(left_frame, text="Filtrar",font=('Poppins Bold', 15), text_color= "#484E55")
+    label_filtro.place(x=40,y=150)
 
-        for widget in frame_contas.winfo_children():
-            widget.destroy()
+    frame_filtro = ctk.CTkFrame(left_frame,fg_color="transparent")
+    frame_filtro.place(x=40,y=250)
 
-        conex = sqlite3.connect('Banco_de_Dados.db')
-        cursor = conex.cursor()
-        cursor.execute("SELECT * FROM Contas")
-        contas = cursor.fetchall()
-        conex.close()
+    filter_var = ctk.StringVar(value="outro")
 
-        checkboxes = []
-        headers = ["  Pago "," Tipo ", " Fornecedor ", " Valor ", " Data "]
+    def on_radio_change(filtro1, valor_filtro1):
 
-        for col, header in enumerate(headers):
-            ctk.CTkLabel(frame_contas, text=header, font=('Arial Bold', 12)).grid(row=0, column=col, padx= 5,pady=5)
-
-        for i, conta in enumerate(contas, start=1):
-
-            check = ctk.IntVar()
-            checkbox = ctk.CTkCheckBox(frame_contas,text="",width=25,variable=check)
-            checkbox.grid(row=i,column=0)
-            checkboxes.append((check, (conta[0], conta[2])))
-
-            for j, valor in enumerate(conta, start=1):
-                ctk.CTkLabel(frame_contas, text=str(valor)).grid(row=i, column=j)
-                
-
-        def marcar_pagamento():
-            conex = sqlite3.connect('Banco_de_Dados.db')
-            cursor = conex.cursor()
-            
-            for check, (tipo, valor) in checkboxes:
-                if check.get() == 1: 
-
-                    arquivo = "saldo.json"
-                    with open(arquivo, 'r') as f:
-                        dados = json.load(f)
-                        saldo = dados.get('saldo', 0)
-                    
-                    saida = valor
-                    novo_saldo = saldo - saida
-                    
-                    cursor.execute("DELETE FROM Contas WHERE tipo=?", (tipo,))
-                    with open(arquivo, 'w') as f:
-                        json.dump({'saldo': novo_saldo}, f)
-
-                        
-            
-            conex.commit()
-            conex.close()
-            janela_contas.destroy()  # Fecha a janela de contas após salvar as alterações
-            messagebox.showinfo("Sucesso", "Contas pagas e removidas com sucesso!")
-
-        botao_pagar_contas = ctk.CTkButton(frame_contas, text="Pagar Contas", command=marcar_pagamento)
-        botao_pagar_contas.grid(row=i+1,column=2)
-
-    botao_todas_contas = ctk.CTkButton(left_frame, text="Todas as contas", command=exibir_todas_contas)
-    botao_todas_contas.place(x=40,y=140)
-
-
-
-
-
-
-    def filtro_contas(tipo):
-
-        for widget in frame_contas.winfo_children():
-            widget.destroy()
+        selected_option = filter_var.get()
         
-        conex = sqlite3.connect('Banco_de_Dados.db')
-        cursor = conex.cursor()
+        if selected_option == "Todas Contas":
+            mostrar_contas("Todas",filtro1, valor_filtro1, frame_contas, janela_contas)
+            
+        elif selected_option == "Pagas":
+            mostrar_contas("ContasPagas",filtro1, valor_filtro1, frame_contas, janela_contas)
 
-        try:
-            cursor.execute("SELECT * FROM Contas WHERE tipo = ?", (tipo,))
-
-
-            contas = cursor.fetchall()
-            conex.close()
-
-
-            checkboxes = []
-            headers = ["  Pago "," Tipo ", " Fornecedor ", " Valor ", " Data "]
-
-            for col, header in enumerate(headers):
-                    ctk.CTkLabel(frame_contas, text=header, font=('Arial Bold', 12)).grid(row=0, column=col, padx= 5,pady=5)
-
-            for i, conta in enumerate(contas, start=1):
-
-                check = ctk.IntVar()
-                checkbox = ctk.CTkCheckBox(frame_contas,text="",width=25,variable=check)
-                checkbox.grid(row=i,column=0)
-                checkboxes.append((check, (conta[0], conta[2])))
-
-                for j, valor in enumerate(conta, start=1):
-                        ctk.CTkLabel(frame_contas, text=str(valor)).grid(row=i, column=j)
-
-            def marcar_pagamento():
-                conex = sqlite3.connect('Banco_de_Dados.db')
-                cursor = conex.cursor()
-                    
-                for check, (tipo, valor) in checkboxes:
-                    if check.get() == 1: 
-
-                        arquivo = "saldo.json"
-                        with open(arquivo, 'r') as f:
-                            dados = json.load(f)
-                            saldo = dados.get('saldo', 0)
-                            
-                        saida = valor
-                        novo_saldo = saldo - saida
-                            
-                        cursor.execute("DELETE FROM Contas WHERE tipo=?", (tipo,))
-                        with open(arquivo, 'w') as f:
-                            json.dump({'saldo': novo_saldo}, f)
-
-                conex.commit()
-                conex.close()
-                janela_contas.destroy()  
-                messagebox.showinfo("Sucesso", "Contas pagas e removidas com sucesso!")
+        elif selected_option == "Não Pagas":
+            mostrar_contas("Contas",filtro1, valor_filtro1, frame_contas, janela_contas)
 
 
-            botao_pagar_contas = ctk.CTkButton(frame_contas, text="Pagar Contas", command=marcar_pagamento)
-            botao_pagar_contas.grid(row=i+1,column=2)
+    def filtros(selected_value):
 
-        except UnboundLocalError:
-            messagebox.showinfo("Erro!", f"Tipo: {tipo} não encontrado no Banco de Dados! Lembre-se de Digitar o Tipo da conta exatamente da mesma forma que ele foi cadastrado.")
+        destruir_widgets(frame_filtro)
+
+        if selected_value == "Data":
+
+            ctk.CTkLabel(frame_filtro, text="Mês",font=('Poppins Bold', 13), text_color= "#484E55").place(x=0, y=0)
+
+            entry_data_filtro = ctk.CTkEntry(frame_filtro, placeholder_text="01,02,03...", placeholder_text_color="gray")
+            entry_data_filtro.place(x=0,y=30)
+
+            radio1 = ctk.CTkRadioButton(frame_filtro, text="Todas Contas", variable=filter_var, value="Todas Contas")
+            radio1.place(x=0,y=70)
+
+            radio2 = ctk.CTkRadioButton(frame_filtro, text="Pagas", variable=filter_var, value="Pagas")
+            radio2.place(x=0,y=100)
+
+            radio3 = ctk.CTkRadioButton(frame_filtro, text="Não Pagas", variable=filter_var, value="Não Pagas")
+            radio3.place(x=0,y=130)
+
+            botao_selecionar_radio = ctk.CTkButton(frame_filtro, text="Selecionar", command=lambda:on_radio_change("data_pg", entry_data_filtro.get()))
+            botao_selecionar_radio.place(x=0,y=160)
+
+        if selected_value == "Tipo":
+
+            ctk.CTkLabel(frame_filtro, text="Tipo Conta",font=('Poppins Bold', 13), text_color= "#484E55").place(x=0, y=0)
+
+            entry_data_filtro = ctk.CTkEntry(frame_filtro, placeholder_text="Energia,Agua...", placeholder_text_color="gray")
+            entry_data_filtro.place(x=0,y=30)
+
+            radio1 = ctk.CTkRadioButton(frame_filtro, text="Todas Contas", variable=filter_var, value="Todas Contas")
+            radio1.place(x=0,y=70)
+
+            radio2 = ctk.CTkRadioButton(frame_filtro, text="Pagas", variable=filter_var, value="Pagas")
+            radio2.place(x=0,y=100)
+
+            radio3 = ctk.CTkRadioButton(frame_filtro, text="Não Pagas", variable=filter_var, value="Não Pagas")
+            radio3.place(x=0,y=130)
+
+            botao_selecionar_radio = ctk.CTkButton(frame_filtro, text="Selecionar", command=lambda:on_radio_change("tipo", entry_data_filtro.get()))
+            botao_selecionar_radio.place(x=0,y=160)
         
-        finally:
-            conex.close()
+        if selected_value == "Valor":
 
+            ctk.CTkLabel(frame_filtro, text="Valor",font=('Poppins Bold', 13), text_color= "#484E55").place(x=0, y=0)
+
+            entry_data_filtro = ctk.CTkEntry(frame_filtro, placeholder_text="200,300,500...", placeholder_text_color="gray")
+            entry_data_filtro.place(x=0,y=30)
+
+            radio1 = ctk.CTkRadioButton(frame_filtro, text="Todas Contas", variable=filter_var, value="Todas Contas")
+            radio1.place(x=0,y=70)
+
+            radio2 = ctk.CTkRadioButton(frame_filtro, text="Pagas", variable=filter_var, value="Pagas")
+            radio2.place(x=0,y=100)
+
+            radio3 = ctk.CTkRadioButton(frame_filtro, text="Não Pagas", variable=filter_var, value="Não Pagas")
+            radio3.place(x=0,y=130)
+
+            botao_selecionar_radio = ctk.CTkButton(frame_filtro, text="Selecionar", command=lambda:on_radio_change("valor", entry_data_filtro.get()))
+            botao_selecionar_radio.place(x=0,y=160)
+
+
+    def on_option_change_filtros(choice):
+        filtros(choice)
     
-    botao_filtrar_contas = ctk.CTkButton(left_frame, text="Filtrar", command=lambda:filtro_contas(entry_filtro_conta.get()))
-    botao_filtrar_contas.place(x=40,y=90)
+    filtros_options = ["Data", "Tipo", "Valor"] 
+    filtros_menu = ctk.CTkOptionMenu(    
+    master=left_frame, 
+    values=filtros_options, 
+    command=on_option_change_filtros,
+    dropdown_font=("Poppins", 12),  
+    button_color="lightblue",  
+    dropdown_fg_color="#3c8cd4",
+    dropdown_text_color="white"
+    )
+    filtros_menu.place(x=40,y=190)
+    
+    
+
+
+
+
+
+
+
 
         
-        
-
-        
-
-
-
-
-
-
+    
 
 
 
@@ -495,35 +671,81 @@ def corretor_entries(selected_value):
     for widget in frame_corretores.winfo_children():
         widget.destroy()
 
-    if selected_value == '1 Corretor':
-
         global corretor1 
         global corretor2
         global corretor3
+        global corretor4
+
+        global comissao1 
+        global comissao2
+        global comissao3
+        global comissao4
+
+    if selected_value == '1 Corretor':
 
         corretor1 = ctk.CTkEntry(frame_corretores, placeholder_text='Nome corretor', placeholder_text_color='gray')
         corretor1.place(x=220, y=340)
+        comissao1 = ctk.CTkEntry(frame_corretores, width=30, placeholder_text='(%)', placeholder_text_color='gray')
+        comissao1.place(x=365,y=340)
         corretor2 = "Vazio"
         corretor3 = "Vazio"
+        corretor4 = "Vazio"
 
     if selected_value == '2 Corretores':
         corretor1 = ctk.CTkEntry(frame_corretores, placeholder_text='Nome corretor 1', placeholder_text_color='gray')
         corretor1.place(x=220, y=340)
+        comissao1 = ctk.CTkEntry(frame_corretores, width=30, placeholder_text='(%)', placeholder_text_color='gray')
+        comissao1.place(x=365,y=340)
         
         corretor2 = ctk.CTkEntry(frame_corretores, placeholder_text='Nome corretor 2', placeholder_text_color='gray')
         corretor2.place(x=220, y=370)
+        comissao2 = ctk.CTkEntry(frame_corretores, width=30, placeholder_text='(%)', placeholder_text_color='gray')
+        comissao2.place(x=365,y=370)
         
         corretor3 = "Vazio"
+        corretor4 = "Vazio"
+
     
     if selected_value == '3 Corretores':
         corretor1 = ctk.CTkEntry(frame_corretores, placeholder_text='Nome corretor 1', placeholder_text_color='gray')
         corretor1.place(x=220, y=340)
+        comissao1 = ctk.CTkEntry(frame_corretores, width=30, placeholder_text='(%)', placeholder_text_color='gray')
+        comissao1.place(x=365,y=340)
        
         corretor2 = ctk.CTkEntry(frame_corretores, placeholder_text='Nome corretor 2', placeholder_text_color='gray')
         corretor2.place(x=220, y=370)
+        comissao2 = ctk.CTkEntry(frame_corretores, width=30, placeholder_text='(%)', placeholder_text_color='gray')
+        comissao2.place(x=365,y=370)
         
         corretor3 = ctk.CTkEntry(frame_corretores, placeholder_text='Nome corretor 3', placeholder_text_color='gray')
         corretor3.place(x=220, y=400)
+        comissao3 = ctk.CTkEntry(frame_corretores, width=30, placeholder_text='(%)', placeholder_text_color='gray')
+        comissao3.place(x=365,y=400)
+
+        corretor4 = "Vazio"
+
+    if selected_value == '4 Corretores':
+        corretor1 = ctk.CTkEntry(frame_corretores, placeholder_text='Nome corretor 1', placeholder_text_color='gray')
+        corretor1.place(x=220, y=340)
+        comissao1 = ctk.CTkEntry(frame_corretores, width=30, placeholder_text='(%)', placeholder_text_color='gray')
+        comissao1.place(x=365,y=340)
+       
+        corretor2 = ctk.CTkEntry(frame_corretores, placeholder_text='Nome corretor 2', placeholder_text_color='gray')
+        corretor2.place(x=220, y=370)
+        comissao2 = ctk.CTkEntry(frame_corretores, width=30, placeholder_text='(%)', placeholder_text_color='gray')
+        comissao2.place(x=365,y=370)
+        
+        corretor3 = ctk.CTkEntry(frame_corretores, placeholder_text='Nome corretor 3', placeholder_text_color='gray')
+        corretor3.place(x=220, y=400)
+        comissao3 = ctk.CTkEntry(frame_corretores, width=30, placeholder_text='(%)', placeholder_text_color='gray')
+        comissao3.place(x=365,y=400)
+
+        corretor4 = ctk.CTkEntry(frame_corretores, placeholder_text='Nome corretor 4', placeholder_text_color='gray')
+        corretor4.place(x=220, y=430)
+        comissao4 = ctk.CTkEntry(frame_corretores, width=30, placeholder_text='(%)', placeholder_text_color='gray')
+        comissao4.place(x=365,y=430)
+
+
         
 def on_option_change_corretores(choice):
     corretor_entries(choice)
@@ -548,11 +770,6 @@ def tipo_eventos(selected_value):
         valor_venda = ctk.CTkEntry(frame_tipo, placeholder_text='R$ Valor venda', placeholder_text_color='gray')
         valor_venda.place(x=20, y=50)
 
-        label_comissao = ctk.CTkLabel(frame_tipo,text="Comissao por Corretor", font=('Arial Bold', 15))
-        label_comissao.place(x=20,y=80)
-        entry_comissao = ctk.CTkEntry(frame_tipo,placeholder_text="Em porcentagem(%)",placeholder_text_color="gray")
-        entry_comissao.place(x=20,y=110)
-
         label_royal = ctk.CTkLabel(frame_tipo,text="Valor Royalties", font=('Arial Bold', 15))
         label_royal.place(x=20,y=140)
         entry_royal = ctk.CTkEntry(frame_tipo,placeholder_text="Em porcentagem(%)",placeholder_text_color="gray")
@@ -564,11 +781,6 @@ def tipo_eventos(selected_value):
         label_calcao.place(x=20,y=50)
         valor_calcao = ctk.CTkEntry(frame_tipo, placeholder_text='R$ Valor', placeholder_text_color='gray')
         valor_calcao.place(x=20, y=80)
-
-        label_comissao = ctk.CTkLabel(frame_tipo,text="Comissao por Corretor", font=('Arial Bold', 15))
-        label_comissao.place(x=20,y=110)
-        entry_comissao = ctk.CTkEntry(frame_tipo,placeholder_text="Em porcentagem(%)",placeholder_text_color="gray")
-        entry_comissao.place(x=20,y=140)
 
         label_royal = ctk.CTkLabel(frame_tipo,text="Valor Royalties", font=('Arial Bold', 15))
         label_royal.place(x=20,y=170)
@@ -582,69 +794,100 @@ def on_option_change_tipo(choice):
 
 
 
+def mostrar_clientes(tabela,frame,frame2):
 
+    destruir_widgets(frame)
+
+    conex = sqlite3.connect('Banco_de_Dados.db')
+    cursor = conex.cursor()
+    cursor.execute(f"SELECT * FROM {tabela}")
+    clientes = cursor.fetchall()
+    conex.close() 
+    i=0
+    for cliente in clientes:
+        id_cliente = cliente[0]  
+        nome_cliente = cliente[5]
+        text = f"{nome_cliente}"
+
+        button = ctk.CTkButton(frame,text=text,image=add_image, font=('Poppins', 13),compound="left",anchor="w",width=220,
+                                command=partial(mostrar_info_clientes,tabela,id_cliente,frame2,))
+        
+        button.grid(row=i+1,column=0,pady=8,ipady=5, sticky='w',padx=5)
+        i+=2
+
+def mostrar_info_clientes(tabela,id_cliente,frame):
+
+    destruir_widgets(frame)
+
+    conex = sqlite3.connect('Banco_de_Dados.db')
+    cursor = conex.cursor()
+    cursor.execute(f"SELECT * FROM {tabela} WHERE id=?",(id_cliente,))
+    cliente = cursor.fetchone()
+    conex.close()
+
+    if cliente:
+
+        id_cliente = cliente[0]
+        tipo = cliente[1]
+        valor = cliente[2]
+        royalties = cliente[3]
+        calcao = cliente[4]
+        nome_locador = cliente[5]
+        nome_locatario = cliente[6]
+        data = cliente[7]
+        corretor_1 = cliente[8]
+        comissao_1 = cliente[9]
+        corretor_2 = cliente[10]
+        comissao_2 = cliente[11]
+        corretor_3 = cliente[12]
+        comissao_3 = cliente[13]
+        corretor_4 = cliente[14]
+        comissao_4 = cliente[15]
+
+    
+    ctk.CTkLabel(frame, text="Informações do Cliente", image=add_image, 
+                 font=('Poppins', 14),fg_color="#3c8cd4",
+                 corner_radius=15,text_color="white",anchor="w",compound="left").grid(row=0, column=0, pady=10,sticky="w")
+
+    ctk.CTkLabel(frame, text=f"ID: {id_cliente}", font=("Poppins", 14),
+                 fg_color="#3c8cd4", image=key_image, corner_radius=10,
+                 text_color="white",anchor="w",compound="left").grid(row=1, column=0, pady=10, sticky="w")
+    
+    ctk.CTkLabel(frame, text=f"Tipo: {tipo}", font=("Poppins", 14)).grid(row=2, column=0, padx=10, pady=10, sticky="w")
+    ctk.CTkLabel(frame, text=f"Valor: {valor}", font=("Poppins", 14)).grid(row=3, column=0, padx=10, pady=10, sticky="w")
+    ctk.CTkLabel(frame, text=f"Royalties: {royalties}", font=("Poppins", 14)).grid(row=4, column=0, padx=10, pady=10, sticky="w")
+    ctk.CTkLabel(frame, text=f"Calção: {calcao}", font=("Poppins", 14)).grid(row=5, column=0, padx=10, pady=10, sticky="w")
+    ctk.CTkLabel(frame, text=f"Locador: {nome_locador}", font=("Poppins", 14)).grid(row=6, column=0, padx=10, pady=10, sticky="w")
+    ctk.CTkLabel(frame, text=f"Locatário: {nome_locatario}", font=("Poppins", 14)).grid(row=7, column=0, padx=10, pady=10, sticky="w")
+
+    ctk.CTkLabel(frame, text=f"Data: {data}", font=("Poppins", 14)).grid(row=1, column=1, padx=10, pady=10, sticky="w")
+    ctk.CTkLabel(frame, text=f"Corretor 1: {corretor_1} / {comissao_1}%", font=("Poppins", 14)).grid(row=2, column=1, padx=10, pady=10, sticky="w")
+    ctk.CTkLabel(frame, text=f"Corretor 2: {corretor_2} / {comissao_2}%", font=("Poppins", 14)).grid(row=3, column=1, padx=10, pady=10, sticky="w")
+    ctk.CTkLabel(frame, text=f"Corretor 3: {corretor_3} / {comissao_3}%", font=("Poppins", 14)).grid(row=4, column=1, padx=10, pady=10, sticky="w")
+    ctk.CTkLabel(frame, text=f"Corretor 4: {corretor_4} / {comissao_4}%", font=("Poppins", 14)).grid(row=5, column=1, padx=10, pady=10, sticky="w")
 
 def exibir_informacoes_clientes():
 
     janela_clientes = ctk.CTkToplevel(tela)
     janela_clientes.title("Clientes")
-    janela_clientes.geometry("1360x800")
+    janela_clientes.geometry("1000x500")
+    janela_clientes.attributes('-topmost', True)
 
-    conex = sqlite3.connect('Banco_de_Dados.db')
-    cursor = conex.cursor()
-    cursor.execute("SELECT * FROM Clientes")
-    clientes = cursor.fetchall()
-    conex.close()
-    checkboxes = []
+    main_frame = ctk.CTkFrame(janela_clientes)
+    main_frame.pack(fill="both", expand=True)
 
-    frame_clientes = ctk.CTkFrame(janela_clientes)
-    frame_clientes.pack(padx=20, pady=20, fill="both", expand=True)
-    headers = [" Pago "," ID ", " Tipo ", " Valor ", " Royalties ", " Comissão ", " Calção ", " Nome Locador ", " Nome Locatário ", " Data ", " Corretor 1 ", " Corretor 2 ", " Corretor 3"]
+    left_frame = ctk.CTkFrame(main_frame)
+    left_frame.pack(side="left", fill="y",padx=10)
+
+    id_frame = ctk.CTkScrollableFrame(main_frame)
+    id_frame.pack(side="left", expand=True, fill="y", pady=20,ipadx=20)
+
+    info_frame = ctk.CTkScrollableFrame(main_frame,orientation="horizontal")
+    info_frame.pack(side="right", expand=True, fill="both", ipadx=120, ipady=100, pady=20,padx=10)
     
-    for col, header in enumerate(headers):
-        ctk.CTkLabel(frame_clientes, text=header, font=('Arial Bold', 12)).grid(row=0, column=col, padx=20, pady=20)
-
-    for i, cliente in enumerate(clientes, start=1):
-
-        check = ctk.IntVar()
-        checkbox = ctk.CTkCheckBox(frame_clientes,text="",width=25,variable=check)
-        checkbox.grid(row=i,column=0)
-        checkboxes.append((check, (cliente[0], cliente[2])))
-
-        for j, valor in enumerate(cliente,start=1):
-            ctk.CTkLabel(frame_clientes, text=str(valor)).grid(row=i, column=j, padx=5, pady=5)
-
-    def marcar_entrada():
-        conex = sqlite3.connect('Banco_de_Dados.db')
-        cursor = conex.cursor()
-        
-        for check, (id, valor) in checkboxes:
-            if check.get() == 1: 
-
-                arquivo = "saldo.json"
-                with open(arquivo, 'r') as f:
-                    dados = json.load(f)
-                    saldo = dados.get('saldo', 0)
-                
-                entrada = valor
-                novo_saldo = saldo + entrada
-                
-                cursor.execute("DELETE FROM Clientes WHERE id=?", (id,))
-                with open(arquivo, 'w') as f:
-                    json.dump({'saldo': novo_saldo}, f)
-
-                    
-        conex.commit()
-        conex.close()
-
-        janela_clientes.destroy()  # Fecha a janela de contas após salvar as alterações
-        messagebox.showinfo("Sucesso", "Entradas recebidas com sucesso!")
-
-    botao_receber = ctk.CTkButton(frame_clientes, text="Receber Pagamento", command=marcar_entrada)
-    botao_receber.grid(row=i+1,column=2)
-
-
-
+    botao_mostrar_todos_clientes = ctk.CTkButton(left_frame,text="Todos Clientes", command=lambda:mostrar_clientes("Clientes",id_frame,info_frame))
+    botao_mostrar_todos_clientes.place(x=20,y=50)
+    
 
 
 
@@ -653,7 +896,9 @@ tela = ctk.CTk()
 tela.title('Sistema Imobiliaria')
 tela.geometry('1366x768')
 ctk.set_appearance_mode("light")
-    
+
+add_image = ctk.CTkImage(Image.open("user.png"), size=(40,40))
+key_image = ctk.CTkImage(Image.open("key.png"), size=(30,30))
 
 frame_corretores = ctk.CTkFrame(tela, fg_color="transparent")
 frame_corretores.pack(padx=10, pady=10, fill='both', expand=True)
@@ -686,14 +931,14 @@ ano.place(x=320,y=230)
 
 
 
-label_corretores = ctk.CTkLabel(tela, text='Quantidade de corretores', font=('Arial Bold', 15))
+label_corretores = ctk.CTkLabel(tela, text='Quantidade de corretores', font=('Poppins', 15))
 label_corretores.place(x=230,y=270)
-corretores_options = ["1 Corretor", "2 Corretores", "3 Corretores"]  
+corretores_options = ["1 Corretor", "2 Corretores", "3 Corretores", "4 Corretores"]  
 corretores_menu = ctk.CTkOptionMenu(
     master=tela, 
     values=corretores_options, 
     command=on_option_change_corretores,
-    dropdown_font=("Arial", 12),  
+    dropdown_font=("Poppins", 12),  
     button_color="lightblue",  
     dropdown_fg_color="#3c8cd4",
     dropdown_text_color="white"
@@ -720,21 +965,20 @@ tipo_menu.place(x=30,y=50)
 
 
 
-
 botao_salvar = ctk.CTkButton(tela, text='Salvar', command=salvar_dados_clientes)
-botao_salvar.place(x=230, y=450)
+botao_salvar.place(x=230, y=550)
 
 boto_saldo = ctk.CTkButton(tela,text='Mostrar saldo', command=lambda:solicitar_saldo(arquivo='saldo.json'))
-boto_saldo.place(x=420,y=50)
+boto_saldo.place(x=620,y=50)
 
 botao_conta = ctk.CTkButton(tela,text="Adicionar Conta", command=criar_contas)
-botao_conta.place(x=600,y=50)
+botao_conta.place(x=900,y=50)
 
-botao_exibir_inf_contas = ctk.CTkButton(tela, text="Exibir Informações Contas", command=exibir_informacoes_contas)
-botao_exibir_inf_contas.place(x=420,y=400)
+botao_exibir_inf_contas = ctk.CTkButton(tela, text="Exibir Info Contas", command=exibir_informacoes_contas)
+botao_exibir_inf_contas.place(x=620,y=400)
 
-botao_exibir_inf_clientes = ctk.CTkButton(tela, text="Exibir Informações Clientes", command=exibir_informacoes_clientes)
-botao_exibir_inf_clientes.place(x=420,y=450)
+botao_exibir_inf_clientes = ctk.CTkButton(tela, text="Exibir Info Clientes", command=exibir_informacoes_clientes)
+botao_exibir_inf_clientes.place(x=620,y=450)
 
 
 
