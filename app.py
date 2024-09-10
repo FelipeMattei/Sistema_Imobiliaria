@@ -18,14 +18,14 @@ def solicitar_saldo(arquivo='saldo.json'):
         global label_inicial
         global entry_saldo
         global botao_salvar_saldo
-        label_inicial = ctk.CTkLabel(tela, text='Valor inicial do saldo')
-        label_inicial.place(x=620,y=80)
-        entry_saldo = ctk.CTkEntry(tela)
-        entry_saldo.place(x=620,y=110)
+        label_inicial = ctk.CTkLabel(left_frame, text='Valor inicial do saldo',font=('Poppins',15))
+        label_inicial.grid(row=1,column=0,padx=20,sticky="w")
+        entry_saldo = ctk.CTkEntry(left_frame)
+        entry_saldo.grid(row=2,column=0)
 
-        botao_salvar_saldo = ctk.CTkButton(tela, text='Salvar saldo inicial', 
+        botao_salvar_saldo = ctk.CTkButton(left_frame, text='Salvar saldo inicial',font=('Poppins',15),
                                                 command=lambda: salvar_saldo(entry_saldo.get(), arquivo))
-        botao_salvar_saldo.place(x=620, y=140)
+        botao_salvar_saldo.grid(row=3,column=0,padx=20,sticky="w")
 
     else:
         global label_saldo
@@ -41,19 +41,21 @@ def solicitar_saldo(arquivo='saldo.json'):
             
             if saldo_existente is not None:
 
-                label_saldo = ctk.CTkLabel(tela, text=f"Saldo: R${saldo_existente}", font=('Arial Bold', 15))
-                label_saldo.place(x=620,y=80)
+                label_saldo = ctk.CTkLabel(left_frame, text=f"Saldo: R${saldo_existente}", font=('Poppins Bold',15),image=money_image, anchor="w",
+                                                        compound="left",fg_color="#3c8cd4",text_color="white",corner_radius=10)
+                
+                label_saldo.grid(row=4,column=0,padx=15,pady=20,ipady=5,sticky="w")
 
-                label_alterar = ctk.CTkLabel(tela, text="Alterar o Saldo?",font=('Arial Bold', 15))
-                label_alterar.place(x=620,y=140)
+                label_alterar = ctk.CTkLabel(left_frame, text="Alterar o Saldo?",font=('Poppins',15))
+                label_alterar.grid(row=5,column=0,padx=22,sticky="w")
 
-                entry_alterar = ctk.CTkEntry(tela,placeholder_text="Novo Saldo",placeholder_text_color='gray')
-                entry_alterar.place(x=620,y=180)
+                entry_alterar = ctk.CTkEntry(left_frame,placeholder_text="Novo Saldo",placeholder_text_color='gray',font=('Poppins Bold',15))
+                entry_alterar.grid(row=6,column=0,padx=20,sticky="w")
 
-                botao_alterar = ctk.CTkButton(tela, text="Alterar saldo",
+                botao_alterar = ctk.CTkButton(left_frame, text="Alterar saldo",font=('Poppins',15),
                                               command=lambda:(alterar_saldo(entry_alterar.get(),arquivo='saldo.json'),
                                                              solicitar_saldo(arquivo='saldo.json')) )
-                botao_alterar.place(x=620,y=240)
+                botao_alterar.grid(row=7,column=0,pady=10,padx=20,sticky="w")
 
 
             else:
@@ -104,90 +106,289 @@ def salvar_saldo(valor_inicial, arquivo='saldo.json'):
 
 
 
+def criar_clientes(tela):
+    destruir_widgets(tela)
+    frame_corretores = ctk.CTkFrame(tela, fg_color="transparent",width=200,height=180)
+    frame_corretores.place(x=45,y=400)
+    frame_tipo = ctk.CTkFrame(tela, fg_color="transparent",width=200,height=400)
+    frame_tipo.place(x=250,y=100)
+
+    label_id = ctk.CTkLabel(tela, text='ID do Imóvel', font=('Poppins Bold', 15))
+    label_id.place(x=50,y=30)
+    id = ctk.CTkEntry(tela)
+    id.place(x=48,y=60)
+
+    label_nome_locador = ctk.CTkLabel(tela, text='Nome do Locador', font=('Poppins', 15))
+    label_nome_locador.place(x=50,y=100)
+    nome_locador = ctk.CTkEntry(tela)
+    nome_locador.place(x=50,y=130)
+
+    label_nome_locatario = ctk.CTkLabel(tela, text='Nome do Locatario',  font=('Poppins', 15))
+    label_nome_locatario.place(x=50,y=170)
+    nome_locatario = ctk.CTkEntry(tela)
+    nome_locatario.place(x=50,y=200)
+
+    label_data = ctk.CTkLabel(tela, text='Data',  font=('Poppins', 15))
+    label_data.place(x=50,y=240)
+    dia = ctk.CTkEntry(tela, width=50, placeholder_text='Dia', placeholder_text_color='gray')
+    dia.place(x=50,y=270)
+    mes = ctk.CTkEntry(tela, width=50, placeholder_text='Mes', placeholder_text_color='gray')
+    mes.place(x=110,y=270)
+    ano = ctk.CTkEntry(tela, width=50, placeholder_text='Ano', placeholder_text_color='gray')
+    ano.place(x=170,y=270)
 
 
-def salvar_dados_clientes():
 
-    db_path = 'Banco_de_Dados.db'
+    
+    def corretor_entries(selected_value):
 
-    conex = sqlite3.connect(db_path)
-    cursor = conex.cursor()
+        for widget in frame_corretores.winfo_children():
+            widget.destroy()
 
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS Clientes (
-                id TEXT PRIMARY KEY NOT NULL,
-                tipo TEXT NOT NULL,
-                valor FLOAT,
-                royalties FLOAT,
-                calcao FLOAT,
-                nome_locador TEXT NOT NULL,
-                nome_locatario TEXT NOT NULL,
-                data TEXT NOT NULL,
-                corretor1 TEXT NOT NULL,
-                comissao1 FLOAT,
-                corretor2 TEXT,
-                comissao2 FLOAT,
-                corretor3 TEXT,
-                comissao3 FLOAT,
-                corretor4 TEXT,
-                comissao4 FLOAT
-                );           
+            global corretor1 
+            global corretor2
+            global corretor3
+            global corretor4
+
+            global comissao1 
+            global comissao2
+            global comissao3
+            global comissao4
+
+        if selected_value == '1 Corretor':
+
+            corretor1 = ctk.CTkEntry(frame_corretores, placeholder_text='Nome corretor', placeholder_text_color='gray')
+            corretor1.place(x=5, y=0)
+            comissao1 = ctk.CTkEntry(frame_corretores, width=30, placeholder_text='(%)', placeholder_text_color='gray')
+            comissao1.place(x=150,y=0)
+            corretor2 = "Vazio"
+            corretor3 = "Vazio"
+            corretor4 = "Vazio"
+
+        if selected_value == '2 Corretores':
+            corretor1 = ctk.CTkEntry(frame_corretores, placeholder_text='Nome corretor 1', placeholder_text_color='gray')
+            corretor1.place(x=5, y=0)
+            comissao1 = ctk.CTkEntry(frame_corretores, width=30, placeholder_text='(%)', placeholder_text_color='gray')
+            comissao1.place(x=150,y=0)
+            
+            corretor2 = ctk.CTkEntry(frame_corretores, placeholder_text='Nome corretor 2', placeholder_text_color='gray')
+            corretor2.place(x=5, y=30)
+            comissao2 = ctk.CTkEntry(frame_corretores, width=30, placeholder_text='(%)', placeholder_text_color='gray')
+            comissao2.place(x=150,y=30)
+            
+            corretor3 = "Vazio"
+            corretor4 = "Vazio"
+
         
-    ''')
+        if selected_value == '3 Corretores':
+            corretor1 = ctk.CTkEntry(frame_corretores, placeholder_text='Nome corretor 1', placeholder_text_color='gray')
+            corretor1.place(x=5, y=0)
+            comissao1 = ctk.CTkEntry(frame_corretores, width=30, placeholder_text='(%)', placeholder_text_color='gray')
+            comissao1.place(x=150,y=0)
+        
+            corretor2 = ctk.CTkEntry(frame_corretores, placeholder_text='Nome corretor 2', placeholder_text_color='gray')
+            corretor2.place(x=5, y=30)
+            comissao2 = ctk.CTkEntry(frame_corretores, width=30, placeholder_text='(%)', placeholder_text_color='gray')
+            comissao2.place(x=150,y=30)
+            
+            corretor3 = ctk.CTkEntry(frame_corretores, placeholder_text='Nome corretor 3', placeholder_text_color='gray')
+            corretor3.place(x=5, y=60)
+            comissao3 = ctk.CTkEntry(frame_corretores, width=30, placeholder_text='(%)', placeholder_text_color='gray')
+            comissao3.place(x=150,y=60)
+
+            corretor4 = "Vazio"
+
+        if selected_value == '4 Corretores':
+            corretor1 = ctk.CTkEntry(frame_corretores, placeholder_text='Nome corretor 1', placeholder_text_color='gray')
+            corretor1.place(x=5, y=0)
+            comissao1 = ctk.CTkEntry(frame_corretores, width=30, placeholder_text='(%)', placeholder_text_color='gray')
+            comissao1.place(x=150,y=0)
+        
+            corretor2 = ctk.CTkEntry(frame_corretores, placeholder_text='Nome corretor 2', placeholder_text_color='gray')
+            corretor2.place(x=5, y=30)
+            comissao2 = ctk.CTkEntry(frame_corretores, width=30, placeholder_text='(%)', placeholder_text_color='gray')
+            comissao2.place(x=150,y=30)
+            
+            corretor3 = ctk.CTkEntry(frame_corretores, placeholder_text='Nome corretor 3', placeholder_text_color='gray')
+            corretor3.place(x=5, y=60)
+            comissao3 = ctk.CTkEntry(frame_corretores, width=30, placeholder_text='(%)', placeholder_text_color='gray')
+            comissao3.place(x=150,y=60)
+
+            corretor4 = ctk.CTkEntry(frame_corretores, placeholder_text='Nome corretor 4', placeholder_text_color='gray')
+            corretor4.place(x=5, y=90)
+            comissao4 = ctk.CTkEntry(frame_corretores, width=30, placeholder_text='(%)', placeholder_text_color='gray')
+            comissao4.place(x=150,y=90)
 
 
-    Id = id.get()
-    tipo = tipo_selec
-
-    if tipo == "Venda":
-        valor = valor_venda.get()
-    else:
-        valor = 0
-    
-    royalties = entry_royal.get()
+            
+    def on_option_change_corretores(choice):
+        corretor_entries(choice)
 
 
-    if tipo == "Aluguel":
-        calcao = valor_calcao.get()
-    else:
-        calcao = 0
-    
-    Nome_locador = nome_locador.get()
-    Nome_locatario = nome_locatario.get()
-    Data = get_combined_date(dia.get(), mes.get(), ano.get())
 
-    try:
-        Corretor1 = corretor1.get() if isinstance(corretor1, ctk.CTkEntry) else corretor1
-        Corretor2 = corretor2.get() if isinstance(corretor2, ctk.CTkEntry) else corretor2
-        Corretor3 = corretor3.get() if isinstance(corretor3, ctk.CTkEntry) else corretor3
-        Corretor4 = corretor4.get() if isinstance(corretor4, ctk.CTkEntry) else corretor4
+    def tipo_eventos(selected_value):
+        for widget in frame_tipo.winfo_children():
+            widget.destroy()
 
-        Comissao1 = comissao1.get() if isinstance(comissao1, ctk.CTkEntry) else comissao1
-        Comissao2 = comissao2.get() if isinstance(comissao2, ctk.CTkEntry) else comissao2
-        Comissao3 = comissao3.get() if isinstance(comissao3, ctk.CTkEntry) else comissao3
-        Comissao4 = comissao4.get() if isinstance(comissao4, ctk.CTkEntry) else comissao4
-        calcao=0
+        global valor_venda
+        global entry_comissao
+        global entry_royal
+        global valor_calcao
+        global tipo_selec
+
+        if selected_value == "Venda":
+            tipo_selec = "Venda"
+
+            label_valor = ctk.CTkLabel(frame_tipo,text="Valor", font=('Poppins', 15))
+            label_valor.place(x=0,y=0)
+            valor_venda = ctk.CTkEntry(frame_tipo, placeholder_text='R$ Valor venda', placeholder_text_color='gray')
+            valor_venda.place(x=0, y=30)
+
+            label_royal = ctk.CTkLabel(frame_tipo,text="Valor Royalties", font=('Poppins', 15))
+            label_royal.place(x=0,y=60)
+            entry_royal = ctk.CTkEntry(frame_tipo,placeholder_text="Em porcentagem(%)",placeholder_text_color="gray")
+            entry_royal.place(x=0,y=90)
+
+        if selected_value == "Aluguel":
+            tipo_selec ="Aluguel"
+            label_calcao = ctk.CTkLabel(frame_tipo,text="Valor Calção", font=('Poppins', 15))
+            label_calcao.place(x=0,y=0)
+            valor_calcao = ctk.CTkEntry(frame_tipo, placeholder_text='R$ Valor', placeholder_text_color='gray')
+            valor_calcao.place(x=0, y=30)
+
+            label_royal = ctk.CTkLabel(frame_tipo,text="Valor Royalties", font=('Poppins', 15))
+            label_royal.place(x=0,y=60)
+            entry_royal = ctk.CTkEntry(frame_tipo,placeholder_text="Em porcentagem(%)",placeholder_text_color="gray")
+            entry_royal.place(x=0,y=90)
+
+
+    def on_option_change_tipo(choice):
+        tipo_eventos(choice)
+        
+
+    label_corretores = ctk.CTkLabel(tela, text='Corretores', font=('Poppins Bold', 15))
+    label_corretores.place(x=50,y=330)
+    corretores_options = ["1 Corretor", "2 Corretores", "3 Corretores", "4 Corretores"]  
+    corretores_menu = ctk.CTkOptionMenu(
+        master=tela,
+        values=corretores_options, 
+        command=on_option_change_corretores,
+        dropdown_font=("Poppins", 12),  
+        button_color="lightblue",  
+        dropdown_fg_color="#3c8cd4",
+        dropdown_text_color="white"
+    )
+    corretores_menu.place(x=50, y=360)
+
+
+
+    label_tipo = ctk.CTkLabel(tela,text="Serviço requisitado", font=('Poppins Bold', 15))
+    label_tipo.place(x=250, y=30)
+    tipo_options = ["Venda", "Aluguel"]
+    tipo_menu = ctk.CTkOptionMenu(
+        master=tela, 
+        values=tipo_options, 
+        command=on_option_change_tipo,
+        dropdown_font=("Arial", 12),  
+        button_color="lightblue",  
+        dropdown_fg_color="#3c8cd4",
+        dropdown_text_color="white"
+    )
+    tipo_menu.place(x=250,y=60)
+
+
+
+
+    def salvar_dados_clientes():
+
+        db_path = 'Banco_de_Dados.db'
+
+        conex = sqlite3.connect(db_path)
+        cursor = conex.cursor()
 
         cursor.execute('''
-        INSERT INTO Clientes (  id,tipo,valor,royalties,
-                                calcao,nome_locador,nome_locatario,data, 
-                                corretor1,comissao1, corretor2,comissao2,
-                                corretor3,comissao3, corretor4,comissao4
-                                )
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
-        ''',(Id,tipo,valor,royalties,calcao,Nome_locador,Nome_locatario,Data, 
-            Corretor1,Comissao1, Corretor2,Comissao2, Corretor3,Comissao3,
-            Corretor4,Comissao4))
+            CREATE TABLE IF NOT EXISTS Clientes (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    tipo TEXT NOT NULL,
+                    valor FLOAT,
+                    royalties FLOAT,
+                    calcao FLOAT,
+                    nome_locador TEXT NOT NULL,
+                    nome_locatario TEXT NOT NULL,
+                    data TEXT NOT NULL,
+                    corretor1 TEXT NOT NULL,
+                    comissao1 FLOAT,
+                    corretor2 TEXT,
+                    comissao2 FLOAT,
+                    corretor3 TEXT,
+                    comissao3 FLOAT,
+                    corretor4 TEXT,
+                    comissao4 FLOAT
+                    );           
+            
+        ''')
 
-        conex.commit()
-        messagebox.showinfo("Sucesso!", "Dados enviados ao banco de dados com sucesso!")
 
-    #except NameError as erro:
+        Id = id.get()
+        tipo = tipo_selec
 
-         #messagebox.showinfo("Erro!", "É necessário definir ao menos 1 corretor por ID!")
+        if tipo == "Venda":
+            valor = valor_venda.get()
+        else:
+            valor = 0
         
-    finally:
-        conex.close()
+        royalties = entry_royal.get()
+
+
+        if tipo == "Aluguel":
+            calcao = valor_calcao.get()
+        else:
+            calcao = 0
+        
+        Nome_locador = nome_locador.get()
+        Nome_locatario = nome_locatario.get()
+        Data = get_combined_date(dia.get(), mes.get(), ano.get())
+
+        try:
+            Corretor1 = corretor1.get() if isinstance(corretor1, ctk.CTkEntry) else corretor1
+            Corretor2 = corretor2.get() if isinstance(corretor2, ctk.CTkEntry) else corretor2
+            Corretor3 = corretor3.get() if isinstance(corretor3, ctk.CTkEntry) else corretor3
+            Corretor4 = corretor4.get() if isinstance(corretor4, ctk.CTkEntry) else corretor4
+
+            Comissao1 = comissao1.get() if isinstance(comissao1, ctk.CTkEntry) else comissao1
+            Comissao2 = comissao2.get() if isinstance(comissao2, ctk.CTkEntry) else comissao2
+            Comissao3 = comissao3.get() if isinstance(comissao3, ctk.CTkEntry) else comissao3
+            Comissao4 = comissao4.get() if isinstance(comissao4, ctk.CTkEntry) else comissao4
+            calcao=0
+
+            cursor.execute('''
+            INSERT INTO Clientes (  id,tipo,valor,royalties,
+                                    calcao,nome_locador,nome_locatario,data, 
+                                    corretor1,comissao1, corretor2,comissao2,
+                                    corretor3,comissao3, corretor4,comissao4
+                                    )
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+            ''',(Id,tipo,valor,royalties,calcao,Nome_locador,Nome_locatario,Data, 
+                Corretor1,Comissao1, Corretor2,Comissao2, Corretor3,Comissao3,
+                Corretor4,Comissao4))
+
+            conex.commit()
+            messagebox.showinfo("Sucesso!", "Dados enviados ao banco de dados com sucesso!")
+
+        except NameError as erro:
+
+            messagebox.showinfo("Erro!", "É necessário definir ao menos 1 corretor por ID!")
+            
+        finally:
+            conex.close()
+        
+
+
+    botao_salvar = ctk.CTkButton(tela, text='Salvar',width=150,height=40, command=salvar_dados_clientes)
+    botao_salvar.place(x=230, y=550)
+
+
+
 
 
 
@@ -357,42 +558,42 @@ def gerar_id(tipo_conta):
             return novo_id
 
 
-def criar_contas():
+def criar_contas(tela):
 
-    label_tipoc = ctk.CTkLabel(tela, text="Tipo de conta", font=('Arial Bold', 15))
-    label_tipoc.place(x=900, y=80)
+    destruir_widgets(tela)
+    
+    label_tipoc = ctk.CTkLabel(tela, text="Tipo de conta", font=('Poppins Bold', 15))
+    label_tipoc.place(x=50, y=30)
 
     conta_entry = ctk.CTkEntry(tela, placeholder_text="Energia, Aluguel, Etc...",placeholder_text_color='gray')
-    conta_entry.place(x=900,y=110)
+    conta_entry.place(x=50,y=60)
 
-    label_fornecedorc = ctk.CTkLabel(tela, text="Fornecedor", font=('Arial Bold', 15))
-    label_fornecedorc.place(x=900, y=140)
+    label_fornecedorc = ctk.CTkLabel(tela, text="Fornecedor", font=('Poppins', 15))
+    label_fornecedorc.place(x=50, y=100)
 
     fornecedor_entry = ctk.CTkEntry(tela)
-    fornecedor_entry.place(x=900,y=170)
+    fornecedor_entry.place(x=50,y=130)
 
-    label_valorc = ctk.CTkLabel(tela, text="Valor Conta", font=('Arial Bold', 15))
-    label_valorc.place(x=900, y=200)
+    label_valorc = ctk.CTkLabel(tela, text="Valor Conta", font=('Poppins', 15))
+    label_valorc.place(x=50, y=160)
 
     valor_entry = ctk.CTkEntry(tela)
-    valor_entry.place(x=900,y=230)
+    valor_entry.place(x=50,y=190)
 
-    label_datac = ctk.CTkLabel(tela, text="Data de Vencimento", font=('Arial Bold', 15))
-    label_datac.place(x=900, y=260)
+    label_datac = ctk.CTkLabel(tela, text="Data de Vencimento", font=('Poppins', 15))
+    label_datac.place(x=50, y=230)
 
     dia_entry = ctk.CTkEntry(tela, width=50, placeholder_text='Dia', placeholder_text_color='gray')
-    dia_entry.place(x=900,y=290)
+    dia_entry.place(x=50,y=260)
     mes_entry = ctk.CTkEntry(tela, width=50, placeholder_text='Mes', placeholder_text_color='gray')
-    mes_entry.place(x=960,y=290)  
+    mes_entry.place(x=110,y=260)  
     ano_entry = ctk.CTkEntry(tela, width=50, placeholder_text='Ano', placeholder_text_color='gray')
-    ano_entry.place(x=1020,y=290)
-    label_ask = ctk.CTkLabel(tela,text="Deseja repetir esta conta para próximos meses?", font=('Arial Bold', 15))
-    label_ask.place(x=900, y=330)
-
-
+    ano_entry.place(x=170,y=260)
+    label_ask = ctk.CTkLabel(tela,text="Deseja repetir esta conta para próximos meses?", font=('Poppins Bold', 15))
+    label_ask.place(x=50, y=300)
 
     frame_ask= ctk.CTkFrame(tela,fg_color="transparent",width=350)
-    frame_ask.place(x=900,y=420)
+    frame_ask.place(x=50,y=360)
 
     def ask_eventos(selected_value):
         
@@ -402,9 +603,9 @@ def criar_contas():
         
         if selected_value == "Sim":
 
-            ctk.CTkLabel(frame_ask, text="Quantos meses a frente?",font=('Arial Bold', 15)).place(x=0, y=0)
+            ctk.CTkLabel(frame_ask, text="Quantos meses a frente?",font=('Poppins', 15)).place(x=0, y=0)
             entry_quantidade_mes = ctk.CTkEntry(frame_ask,width=60, placeholder_text="1,2,3...", placeholder_text_color="gray")
-            entry_quantidade_mes.place(x=180, y=0)
+            entry_quantidade_mes.place(x=200, y=0)
 
 
 
@@ -414,12 +615,12 @@ def criar_contas():
     
 
 
-    botao_salvar_contas = ctk.CTkButton(tela,text="Salvar", command=lambda:salvar_contas(
+    botao_salvar_contas = ctk.CTkButton(tela,text="Salvar", width=150,height=40,command=lambda:salvar_contas(
         conta_entry.get(), fornecedor_entry.get(),
         valor_entry.get(), dia_entry.get(),
         mes_entry.get(), ano_entry.get()))
     
-    botao_salvar_contas.place(x=900,y=480)
+    botao_salvar_contas.place(x=230, y=550)
 
     def on_option_change_ask(choice):
         global selected_value
@@ -436,7 +637,7 @@ def criar_contas():
     dropdown_fg_color="#3c8cd4",
     dropdown_text_color="white"
     )
-    yes_no_menu.place(x=900,y=370)
+    yes_no_menu.place(x=50,y=330)
 
 
 
@@ -648,148 +849,6 @@ def exibir_informacoes_contas():
     )
     filtros_menu.place(x=40,y=190)
     
-    
-
-
-
-
-
-
-
-
-        
-    
-
-
-
-
-
-
-
-def corretor_entries(selected_value):
-
-    for widget in frame_corretores.winfo_children():
-        widget.destroy()
-
-        global corretor1 
-        global corretor2
-        global corretor3
-        global corretor4
-
-        global comissao1 
-        global comissao2
-        global comissao3
-        global comissao4
-
-    if selected_value == '1 Corretor':
-
-        corretor1 = ctk.CTkEntry(frame_corretores, placeholder_text='Nome corretor', placeholder_text_color='gray')
-        corretor1.place(x=220, y=340)
-        comissao1 = ctk.CTkEntry(frame_corretores, width=30, placeholder_text='(%)', placeholder_text_color='gray')
-        comissao1.place(x=365,y=340)
-        corretor2 = "Vazio"
-        corretor3 = "Vazio"
-        corretor4 = "Vazio"
-
-    if selected_value == '2 Corretores':
-        corretor1 = ctk.CTkEntry(frame_corretores, placeholder_text='Nome corretor 1', placeholder_text_color='gray')
-        corretor1.place(x=220, y=340)
-        comissao1 = ctk.CTkEntry(frame_corretores, width=30, placeholder_text='(%)', placeholder_text_color='gray')
-        comissao1.place(x=365,y=340)
-        
-        corretor2 = ctk.CTkEntry(frame_corretores, placeholder_text='Nome corretor 2', placeholder_text_color='gray')
-        corretor2.place(x=220, y=370)
-        comissao2 = ctk.CTkEntry(frame_corretores, width=30, placeholder_text='(%)', placeholder_text_color='gray')
-        comissao2.place(x=365,y=370)
-        
-        corretor3 = "Vazio"
-        corretor4 = "Vazio"
-
-    
-    if selected_value == '3 Corretores':
-        corretor1 = ctk.CTkEntry(frame_corretores, placeholder_text='Nome corretor 1', placeholder_text_color='gray')
-        corretor1.place(x=220, y=340)
-        comissao1 = ctk.CTkEntry(frame_corretores, width=30, placeholder_text='(%)', placeholder_text_color='gray')
-        comissao1.place(x=365,y=340)
-       
-        corretor2 = ctk.CTkEntry(frame_corretores, placeholder_text='Nome corretor 2', placeholder_text_color='gray')
-        corretor2.place(x=220, y=370)
-        comissao2 = ctk.CTkEntry(frame_corretores, width=30, placeholder_text='(%)', placeholder_text_color='gray')
-        comissao2.place(x=365,y=370)
-        
-        corretor3 = ctk.CTkEntry(frame_corretores, placeholder_text='Nome corretor 3', placeholder_text_color='gray')
-        corretor3.place(x=220, y=400)
-        comissao3 = ctk.CTkEntry(frame_corretores, width=30, placeholder_text='(%)', placeholder_text_color='gray')
-        comissao3.place(x=365,y=400)
-
-        corretor4 = "Vazio"
-
-    if selected_value == '4 Corretores':
-        corretor1 = ctk.CTkEntry(frame_corretores, placeholder_text='Nome corretor 1', placeholder_text_color='gray')
-        corretor1.place(x=220, y=340)
-        comissao1 = ctk.CTkEntry(frame_corretores, width=30, placeholder_text='(%)', placeholder_text_color='gray')
-        comissao1.place(x=365,y=340)
-       
-        corretor2 = ctk.CTkEntry(frame_corretores, placeholder_text='Nome corretor 2', placeholder_text_color='gray')
-        corretor2.place(x=220, y=370)
-        comissao2 = ctk.CTkEntry(frame_corretores, width=30, placeholder_text='(%)', placeholder_text_color='gray')
-        comissao2.place(x=365,y=370)
-        
-        corretor3 = ctk.CTkEntry(frame_corretores, placeholder_text='Nome corretor 3', placeholder_text_color='gray')
-        corretor3.place(x=220, y=400)
-        comissao3 = ctk.CTkEntry(frame_corretores, width=30, placeholder_text='(%)', placeholder_text_color='gray')
-        comissao3.place(x=365,y=400)
-
-        corretor4 = ctk.CTkEntry(frame_corretores, placeholder_text='Nome corretor 4', placeholder_text_color='gray')
-        corretor4.place(x=220, y=430)
-        comissao4 = ctk.CTkEntry(frame_corretores, width=30, placeholder_text='(%)', placeholder_text_color='gray')
-        comissao4.place(x=365,y=430)
-
-
-        
-def on_option_change_corretores(choice):
-    corretor_entries(choice)
-
-
-
-
-
-
-def tipo_eventos(selected_value):
-    for widget in frame_tipo.winfo_children():
-        widget.destroy()
-
-    global valor_venda
-    global entry_comissao
-    global entry_royal
-    global valor_calcao
-    global tipo_selec
-
-    if selected_value == "Venda":
-        tipo_selec = "Venda"
-        valor_venda = ctk.CTkEntry(frame_tipo, placeholder_text='R$ Valor venda', placeholder_text_color='gray')
-        valor_venda.place(x=20, y=50)
-
-        label_royal = ctk.CTkLabel(frame_tipo,text="Valor Royalties", font=('Arial Bold', 15))
-        label_royal.place(x=20,y=140)
-        entry_royal = ctk.CTkEntry(frame_tipo,placeholder_text="Em porcentagem(%)",placeholder_text_color="gray")
-        entry_royal.place(x=20,y=170)
-
-    if selected_value == "Aluguel":
-        tipo_selec ="Aluguel"
-        label_calcao = ctk.CTkLabel(frame_tipo,text="Valor Calção", font=('Arial Bold', 15))
-        label_calcao.place(x=20,y=50)
-        valor_calcao = ctk.CTkEntry(frame_tipo, placeholder_text='R$ Valor', placeholder_text_color='gray')
-        valor_calcao.place(x=20, y=80)
-
-        label_royal = ctk.CTkLabel(frame_tipo,text="Valor Royalties", font=('Arial Bold', 15))
-        label_royal.place(x=20,y=170)
-        entry_royal = ctk.CTkEntry(frame_tipo,placeholder_text="Em porcentagem(%)",placeholder_text_color="gray")
-        entry_royal.place(x=20,y=200)
-
-
-def on_option_change_tipo(choice):
-    tipo_eventos(choice)
 
 
 
@@ -877,15 +936,15 @@ def exibir_informacoes_clientes():
     main_frame.pack(fill="both", expand=True)
 
     left_frame = ctk.CTkFrame(main_frame)
-    left_frame.pack(side="left", fill="y",padx=10)
+    left_frame.pack(side="left", fill="y",padx=5)
 
-    id_frame = ctk.CTkScrollableFrame(main_frame)
-    id_frame.pack(side="left", expand=True, fill="y", pady=20,ipadx=20)
+    id_frame = ctk.CTkScrollableFrame(main_frame,fg_color="transparent")
+    id_frame.pack(side="left", expand=True, fill="y",ipadx=50)
 
-    info_frame = ctk.CTkScrollableFrame(main_frame,orientation="horizontal")
-    info_frame.pack(side="right", expand=True, fill="both", ipadx=120, ipady=100, pady=20,padx=10)
+    info_frame = ctk.CTkScrollableFrame(main_frame,orientation="horizontal",fg_color="transparent")
+    info_frame.pack(side="right", expand=True, fill="both", ipadx=450)
     
-    botao_mostrar_todos_clientes = ctk.CTkButton(left_frame,text="Todos Clientes", command=lambda:mostrar_clientes("Clientes",id_frame,info_frame))
+    botao_mostrar_todos_clientes = ctk.CTkButton(left_frame,text="Todos Clientes",font=("Poppins", 14), command=lambda:mostrar_clientes("Clientes",id_frame,info_frame))
     botao_mostrar_todos_clientes.place(x=20,y=50)
     
 
@@ -894,91 +953,41 @@ def exibir_informacoes_clientes():
 
 tela = ctk.CTk()
 tela.title('Sistema Imobiliaria')
-tela.geometry('1366x768')
+tela.geometry('1000x600')
 ctk.set_appearance_mode("light")
 
 add_image = ctk.CTkImage(Image.open("user.png"), size=(40,40))
 key_image = ctk.CTkImage(Image.open("key.png"), size=(30,30))
+money_image = ctk.CTkImage(Image.open("money.png"), size=(20,20))
+tool_image = ctk.CTkImage(Image.open("tool.png"), size=(30,30))
 
-frame_corretores = ctk.CTkFrame(tela, fg_color="transparent")
-frame_corretores.pack(padx=10, pady=10, fill='both', expand=True)
-frame_tipo = ctk.CTkFrame(tela, fg_color="transparent",width=200,height=460)
-frame_tipo.place(x=10,y=40)
+main_frame = ctk.CTkFrame(tela,fg_color="transparent")
+main_frame.pack(fill="both",expand=True)
 
-label_id = ctk.CTkLabel(tela, text='ID do Imóvel', font=('Arial Bold', 15))
-label_id.place(x=230,y=20)
-id = ctk.CTkEntry(tela)
-id.place(x=230,y=50)
+left_frame = ctk.CTkScrollableFrame(main_frame,fg_color="transparent")
+left_frame.pack(side="left",fill="y")
 
-label_nome_locador = ctk.CTkLabel(tela, text='Nome do Locador', font=('Arial Bold', 15))
-label_nome_locador.place(x=230,y=80)
-nome_locador = ctk.CTkEntry(tela)
-nome_locador.place(x=230,y=110)
+criar_frame = ctk.CTkFrame(main_frame,fg_color="transparent")
+criar_frame.pack(side="right",fill="both",expand=True)
 
-label_nome_locatario = ctk.CTkLabel(tela, text='Nome do Locatario', font=('Arial Bold', 15))
-label_nome_locatario.place(x=230,y=140)
-nome_locatario = ctk.CTkEntry(tela)
-nome_locatario.place(x=230,y=170)
+solicitar_saldo(arquivo='saldo.json')
 
-label_data = ctk.CTkLabel(tela, text='Data', font=('Arial Bold', 15))
-label_data.place(x=260,y=200)
-dia = ctk.CTkEntry(tela, width=50, placeholder_text='Dia', placeholder_text_color='gray')
-dia.place(x=200,y=230)
-mes = ctk.CTkEntry(tela, width=50, placeholder_text='Mes', placeholder_text_color='gray')
-mes.place(x=260,y=230)
-ano = ctk.CTkEntry(tela, width=50, placeholder_text='Ano', placeholder_text_color='gray')
-ano.place(x=320,y=230)
+ctk.CTkLabel(left_frame, text="Ferramentas",font=('Poppins Bold',15),anchor="w",
+                                                compound="left").grid(row=8,column=0,padx=20,pady=10,sticky="w")
 
+botao_criar_clientes = ctk.CTkButton(left_frame, text="Adicionar Cliente",font=('Poppins',15),corner_radius=15,command=lambda:criar_clientes(criar_frame))
+botao_criar_clientes.grid(row=9,column=0,padx=20,pady=10,sticky="w",ipadx=4)
 
+botao_conta = ctk.CTkButton(left_frame,text="Adicionar Conta",font=('Poppins',15),corner_radius=15,command=lambda:criar_contas(criar_frame))
+botao_conta.grid(row=10,column=0,padx=20,pady=10,sticky="w",ipadx=6)
 
-label_corretores = ctk.CTkLabel(tela, text='Quantidade de corretores', font=('Poppins', 15))
-label_corretores.place(x=230,y=270)
-corretores_options = ["1 Corretor", "2 Corretores", "3 Corretores", "4 Corretores"]  
-corretores_menu = ctk.CTkOptionMenu(
-    master=tela, 
-    values=corretores_options, 
-    command=on_option_change_corretores,
-    dropdown_font=("Poppins", 12),  
-    button_color="lightblue",  
-    dropdown_fg_color="#3c8cd4",
-    dropdown_text_color="white"
-)
-corretores_menu.place(x=230, y=300)
+ctk.CTkLabel(left_frame, text="Informações",font=('Poppins Bold',15),).grid(row=11,column=0,padx=20,pady=10,sticky="w")
 
+botao_exibir_inf_contas = ctk.CTkButton(left_frame, text="Exibir Info Contas",font=('Poppins',15),corner_radius=15, command=exibir_informacoes_contas)
+botao_exibir_inf_contas.grid(row=12,column=0,padx=20,pady=10,sticky="w",ipadx=4)
 
-
-
-label_tipo = ctk.CTkLabel(tela,text="Serviço requisitado", font=('Arial Bold', 15))
-label_tipo.place(x=30, y=20)
-tipo_options = ["Venda", "Aluguel"]
-tipo_menu = ctk.CTkOptionMenu(
-    master=tela, 
-    values=tipo_options, 
-    command=on_option_change_tipo,
-    dropdown_font=("Arial", 12),  
-    button_color="lightblue",  
-    dropdown_fg_color="#3c8cd4",
-    dropdown_text_color="white"
-)
-tipo_menu.place(x=30,y=50)
-
-
-
-
-botao_salvar = ctk.CTkButton(tela, text='Salvar', command=salvar_dados_clientes)
-botao_salvar.place(x=230, y=550)
-
-boto_saldo = ctk.CTkButton(tela,text='Mostrar saldo', command=lambda:solicitar_saldo(arquivo='saldo.json'))
-boto_saldo.place(x=620,y=50)
-
-botao_conta = ctk.CTkButton(tela,text="Adicionar Conta", command=criar_contas)
-botao_conta.place(x=900,y=50)
-
-botao_exibir_inf_contas = ctk.CTkButton(tela, text="Exibir Info Contas", command=exibir_informacoes_contas)
-botao_exibir_inf_contas.place(x=620,y=400)
-
-botao_exibir_inf_clientes = ctk.CTkButton(tela, text="Exibir Info Clientes", command=exibir_informacoes_clientes)
-botao_exibir_inf_clientes.place(x=620,y=450)
+botao_exibir_inf_clientes = ctk.CTkButton(left_frame, text="Exibir Info Clientes",font=('Poppins',15),corner_radius=15, command=exibir_informacoes_clientes)
+botao_exibir_inf_clientes.grid(row=13,column=0,padx=20,pady=10,sticky="w")
 
 
 
