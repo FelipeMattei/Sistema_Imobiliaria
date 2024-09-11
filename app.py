@@ -40,23 +40,27 @@ def solicitar_saldo(arquivo='saldo.json'):
             saldo_existente = dados.get('saldo', None)
             
             if saldo_existente is not None:
-
+                
                 label_saldo = ctk.CTkLabel(left_frame, text=f"Saldo: R${saldo_existente}", font=('Poppins Bold',15),image=money_image, anchor="w",
                                                         compound="left",fg_color="#3c8cd4",text_color="white",corner_radius=10)
                 
                 label_saldo.grid(row=4,column=0,padx=15,pady=20,ipady=5,sticky="w")
 
                 label_alterar = ctk.CTkLabel(left_frame, text="Alterar o Saldo?",font=('Poppins',15))
-                label_alterar.grid(row=5,column=0,padx=22,sticky="w")
+                label_alterar.grid(row=6,column=0,padx=22,sticky="w")
 
                 entry_alterar = ctk.CTkEntry(left_frame,placeholder_text="Novo Saldo",placeholder_text_color='gray',font=('Poppins Bold',15))
-                entry_alterar.grid(row=6,column=0,padx=20,sticky="w")
+                entry_alterar.grid(row=7,column=0,padx=20,sticky="w")
 
                 botao_alterar = ctk.CTkButton(left_frame, text="Alterar saldo",font=('Poppins',15),
                                               command=lambda:(alterar_saldo(entry_alterar.get(),arquivo='saldo.json'),
                                                              solicitar_saldo(arquivo='saldo.json')) )
-                botao_alterar.grid(row=7,column=0,pady=10,padx=20,sticky="w")
+                botao_alterar.grid(row=8,column=0,pady=10,padx=20,sticky="w")
 
+                botao_atualizar = ctk.CTkButton(left_frame, text="Atualizar",font=('Poppins',15),
+                                              command=lambda:(atualizar_saldo(arquivo='saldo.json'),
+                                                             solicitar_saldo(arquivo='saldo.json')) )
+                botao_atualizar.grid(row=5,column=0,pady=3,padx=20,sticky="w")
 
             else:
                 messagebox.showerror("Erro", "Arquivo de saldo encontrado, mas sem valor válido. Por favor, verifique o arquivo.")
@@ -82,6 +86,15 @@ def alterar_saldo(valor_alterar, arquivo='saldo.json'):
         with open(arquivo, 'w') as f:
             json.dump(dados, f,)
 
+def atualizar_saldo(arquivo="saldo.json"):
+    label_saldo.destroy()
+   
+    if os.path.exists(arquivo):
+        with open(arquivo, 'r') as f:
+            dados = json.load(f)
+            chave = 'saldo'
+        dados[chave] = dados[chave]
+        
 
 
 
@@ -442,6 +455,7 @@ def mostrar_contas(nome_tabela, filtro, valor_filtro, frame, janela):
         checkboxes = []
         headers = ["  Pago "," ID ", " Tipo ", " Fornecedor ", " Valor ", " Data "]
 
+
         for col, header in enumerate(headers):
             ctk.CTkLabel(frame, text=header, font=('Arial Bold', 12)).grid(row=0, column=col, padx=15,pady=10)
 
@@ -455,6 +469,31 @@ def mostrar_contas(nome_tabela, filtro, valor_filtro, frame, janela):
             for j, valor in enumerate(conta, start=1):
                 ctk.CTkLabel(frame, text=str(valor)).grid(row=i, column=j)
                 
+        def novo_valor():
+
+            global valor_inserido
+            valor_inserido = None
+
+            def retornar_novo_valor():
+                global valor_inserido
+                valor_inserido = novo_valor_entry.get()
+                tela.destroy()
+
+            tela = ctk.CTkToplevel(janela)
+            tela.attributes('-topmost', True)
+            janela.attributes("-topmost", False)
+            tela.geometry("+400+400")
+
+            ctk.CTkLabel(tela, text="Novo Valor",font=("Poppins Bold",15)).place(x=10,y=5)
+            novo_valor_entry = ctk.CTkEntry(tela)
+            novo_valor_entry.place(x=10, y=35)
+
+            botao_mudar = ctk.CTkButton(tela, text="Alterar", command=retornar_novo_valor)
+            botao_mudar.place(x=10, y=80)
+
+            tela.wait_window()  # Aguarda até que a janela seja fechada
+            
+            
 
         def marcar_pagamento():
             conex = sqlite3.connect('Banco_de_Dados.db')
@@ -462,7 +501,15 @@ def mostrar_contas(nome_tabela, filtro, valor_filtro, frame, janela):
 
             for check, conta in checkboxes:
                 if check.get() == 1: 
+
                     id, tipo, fornecedor, valor, data_pg = conta    
+                    ask_valor = messagebox.askyesno("Confirmaçao",f"Voce deseja mudar o valor da conta {tipo}? Valor atual:{valor}",parent=frame)
+
+                    if ask_valor:
+                        novo_valor()
+                        valor = float(valor_inserido)
+                    else:
+                        valor = valor
 
                     arquivo = "saldo.json"
                     with open(arquivo, 'r') as f:
@@ -742,15 +789,15 @@ def exibir_informacoes_contas():
     frame_contas = ctk.CTkScrollableFrame(main_frame)
     frame_contas.pack(side="right", fill="both", expand=True, padx=(0, 20))
 
-    ctk.CTkLabel(left_frame, text="Exibir Todas:",font=('Poppins Bold', 15), text_color= "#484E55").place(x=40, y=20)
+    ctk.CTkLabel(left_frame, text="Exibir Todas:",font=('Poppins Bold', 15)).place(x=40, y=20)
 
-    botao_todas_contas = ctk.CTkButton(left_frame, text="Contas a Pagar", command=lambda:mostrar_contas("Contas", None, None, frame_contas, janela_contas))
+    botao_todas_contas = ctk.CTkButton(left_frame, text="Contas a Pagar",font=('Poppins', 15), command=lambda:mostrar_contas("Contas", None, None, frame_contas, janela_contas))
     botao_todas_contas.place(x=40,y=50)
 
-    botao_exibir_pagas = ctk.CTkButton(left_frame, text="Contas pagas", command=lambda:mostrar_contas("ContasPagas", None, None, frame_contas, janela_contas))
+    botao_exibir_pagas = ctk.CTkButton(left_frame, text="Contas pagas",font=('Poppins', 15), command=lambda:mostrar_contas("ContasPagas", None, None, frame_contas, janela_contas))
     botao_exibir_pagas.place(x=40,y=100)
 
-    label_filtro = ctk.CTkLabel(left_frame, text="Filtrar",font=('Poppins Bold', 15), text_color= "#484E55")
+    label_filtro = ctk.CTkLabel(left_frame, text="Filtrar",font=('Poppins Bold', 15))
     label_filtro.place(x=40,y=150)
 
     frame_filtro = ctk.CTkFrame(left_frame,fg_color="transparent")
@@ -778,59 +825,59 @@ def exibir_informacoes_contas():
 
         if selected_value == "Data":
 
-            ctk.CTkLabel(frame_filtro, text="Mês",font=('Poppins Bold', 13), text_color= "#484E55").place(x=0, y=0)
+            ctk.CTkLabel(frame_filtro, text="Mês",font=('Poppins Bold', 15), text_color= "#484E55").place(x=0, y=0)
 
             entry_data_filtro = ctk.CTkEntry(frame_filtro, placeholder_text="01,02,03...", placeholder_text_color="gray")
             entry_data_filtro.place(x=0,y=30)
 
-            radio1 = ctk.CTkRadioButton(frame_filtro, text="Todas Contas", variable=filter_var, value="Todas Contas")
+            radio1 = ctk.CTkRadioButton(frame_filtro, text="Todas Contas",font=('Poppins', 13), variable=filter_var, value="Todas Contas")
             radio1.place(x=0,y=70)
 
-            radio2 = ctk.CTkRadioButton(frame_filtro, text="Pagas", variable=filter_var, value="Pagas")
+            radio2 = ctk.CTkRadioButton(frame_filtro, text="Pagas",font=('Poppins', 13), variable=filter_var, value="Pagas")
             radio2.place(x=0,y=100)
 
-            radio3 = ctk.CTkRadioButton(frame_filtro, text="Não Pagas", variable=filter_var, value="Não Pagas")
+            radio3 = ctk.CTkRadioButton(frame_filtro, text="Não Pagas",font=('Poppins', 13), variable=filter_var, value="Não Pagas")
             radio3.place(x=0,y=130)
 
-            botao_selecionar_radio = ctk.CTkButton(frame_filtro, text="Selecionar", command=lambda:on_radio_change("data_pg", entry_data_filtro.get()))
+            botao_selecionar_radio = ctk.CTkButton(frame_filtro, text="Selecionar",font=('Poppins', 15), command=lambda:on_radio_change("data_pg", entry_data_filtro.get()))
             botao_selecionar_radio.place(x=0,y=160)
 
         if selected_value == "Tipo":
 
-            ctk.CTkLabel(frame_filtro, text="Tipo Conta",font=('Poppins Bold', 13), text_color= "#484E55").place(x=0, y=0)
+            ctk.CTkLabel(frame_filtro, text="Tipo Conta",font=('Poppins Bold', 15), text_color= "#484E55").place(x=0, y=0)
 
             entry_data_filtro = ctk.CTkEntry(frame_filtro, placeholder_text="Energia,Agua...", placeholder_text_color="gray")
             entry_data_filtro.place(x=0,y=30)
 
-            radio1 = ctk.CTkRadioButton(frame_filtro, text="Todas Contas", variable=filter_var, value="Todas Contas")
+            radio1 = ctk.CTkRadioButton(frame_filtro, text="Todas Contas",font=('Poppins', 13), variable=filter_var, value="Todas Contas")
             radio1.place(x=0,y=70)
 
-            radio2 = ctk.CTkRadioButton(frame_filtro, text="Pagas", variable=filter_var, value="Pagas")
+            radio2 = ctk.CTkRadioButton(frame_filtro, text="Pagas",font=('Poppins', 13), variable=filter_var, value="Pagas")
             radio2.place(x=0,y=100)
 
-            radio3 = ctk.CTkRadioButton(frame_filtro, text="Não Pagas", variable=filter_var, value="Não Pagas")
+            radio3 = ctk.CTkRadioButton(frame_filtro, text="Não Pagas",font=('Poppins', 13), variable=filter_var, value="Não Pagas")
             radio3.place(x=0,y=130)
 
-            botao_selecionar_radio = ctk.CTkButton(frame_filtro, text="Selecionar", command=lambda:on_radio_change("tipo", entry_data_filtro.get()))
+            botao_selecionar_radio = ctk.CTkButton(frame_filtro, text="Selecionar",font=('Poppins', 15), command=lambda:on_radio_change("tipo", entry_data_filtro.get()))
             botao_selecionar_radio.place(x=0,y=160)
         
         if selected_value == "Valor":
 
-            ctk.CTkLabel(frame_filtro, text="Valor",font=('Poppins Bold', 13), text_color= "#484E55").place(x=0, y=0)
+            ctk.CTkLabel(frame_filtro, text="Valor",font=('Poppins Bold', 15), text_color= "#484E55").place(x=0, y=0)
 
             entry_data_filtro = ctk.CTkEntry(frame_filtro, placeholder_text="200,300,500...", placeholder_text_color="gray")
             entry_data_filtro.place(x=0,y=30)
 
-            radio1 = ctk.CTkRadioButton(frame_filtro, text="Todas Contas", variable=filter_var, value="Todas Contas")
+            radio1 = ctk.CTkRadioButton(frame_filtro, text="Todas Contas",font=('Poppins', 13), variable=filter_var, value="Todas Contas")
             radio1.place(x=0,y=70)
 
-            radio2 = ctk.CTkRadioButton(frame_filtro, text="Pagas", variable=filter_var, value="Pagas")
+            radio2 = ctk.CTkRadioButton(frame_filtro, text="Pagas",font=('Poppins', 13), variable=filter_var, value="Pagas")
             radio2.place(x=0,y=100)
 
-            radio3 = ctk.CTkRadioButton(frame_filtro, text="Não Pagas", variable=filter_var, value="Não Pagas")
+            radio3 = ctk.CTkRadioButton(frame_filtro, text="Não Pagas",font=('Poppins', 13), variable=filter_var, value="Não Pagas")
             radio3.place(x=0,y=130)
 
-            botao_selecionar_radio = ctk.CTkButton(frame_filtro, text="Selecionar", command=lambda:on_radio_change("valor", entry_data_filtro.get()))
+            botao_selecionar_radio = ctk.CTkButton(frame_filtro, text="Selecionar",font=('Poppins', 15), command=lambda:on_radio_change("valor", entry_data_filtro.get()))
             botao_selecionar_radio.place(x=0,y=160)
 
 
@@ -841,6 +888,7 @@ def exibir_informacoes_contas():
     filtros_menu = ctk.CTkOptionMenu(    
     master=left_frame, 
     values=filtros_options, 
+    font=('Poppins', 15),
     command=on_option_change_filtros,
     dropdown_font=("Poppins", 12),  
     button_color="lightblue",  
@@ -853,26 +901,41 @@ def exibir_informacoes_contas():
 
 
 
-def mostrar_clientes(tabela,frame,frame2):
+def mostrar_clientes(tabela,frame,frame2,filtro,valor_filtro):
 
     destruir_widgets(frame)
 
     conex = sqlite3.connect('Banco_de_Dados.db')
     cursor = conex.cursor()
-    cursor.execute(f"SELECT * FROM {tabela}")
+
+    if filtro == None and valor_filtro == None:
+        cursor.execute(f"SELECT * FROM {tabela}")
+    else:
+        cursor.execute(f"SELECT * FROM {tabela} WHERE {filtro}=?", (valor_filtro,))
+
     clientes = cursor.fetchall()
     conex.close() 
     i=0
     for cliente in clientes:
         id_cliente = cliente[0]  
         nome_cliente = cliente[5]
-        text = f"{nome_cliente}"
+        text_nome = f"{nome_cliente}"
+        text_id= f"{id_cliente}"
 
-        button = ctk.CTkButton(frame,text=text,image=add_image, font=('Poppins', 13),compound="left",anchor="w",width=220,
+        label_id = ctk.CTkLabel(frame,text=text_nome,image=add_image,font=('Poppins', 13),compound="left",anchor="w")
+        label_id.grid(row=i,column=0, sticky='w')
+
+        label_nome = ctk.CTkLabel(frame,text=f"ID:{text_id}",font=('Poppins', 13),image=key_image,compound="left",anchor="w")
+        label_nome.grid(row=i+1,column=0, sticky='w')
+
+        button = ctk.CTkButton(frame,text="Ver Mais>>", font=('Poppins', 13),width=200,
                                 command=partial(mostrar_info_clientes,tabela,id_cliente,frame2,))
         
-        button.grid(row=i+1,column=0,pady=8,ipady=5, sticky='w',padx=5)
-        i+=2
+        button.grid(row=i+2,column=0,sticky='w')
+
+        ctk.CTkLabel(frame,text="").grid(row=i+3,column=0,pady=5,sticky='w')
+
+        i+=4
 
 def mostrar_info_clientes(tabela,id_cliente,frame):
 
@@ -925,6 +988,12 @@ def mostrar_info_clientes(tabela,id_cliente,frame):
     ctk.CTkLabel(frame, text=f"Corretor 3: {corretor_3} / {comissao_3}%", font=("Poppins", 14)).grid(row=4, column=1, padx=10, pady=10, sticky="w")
     ctk.CTkLabel(frame, text=f"Corretor 4: {corretor_4} / {comissao_4}%", font=("Poppins", 14)).grid(row=5, column=1, padx=10, pady=10, sticky="w")
 
+
+
+
+
+
+
 def exibir_informacoes_clientes():
 
     janela_clientes = ctk.CTkToplevel(tela)
@@ -936,17 +1005,25 @@ def exibir_informacoes_clientes():
     main_frame.pack(fill="both", expand=True)
 
     left_frame = ctk.CTkFrame(main_frame)
-    left_frame.pack(side="left", fill="y",padx=5)
+    left_frame.pack(side="left", fill="both",expand=True,padx=10)
 
     id_frame = ctk.CTkScrollableFrame(main_frame,fg_color="transparent")
-    id_frame.pack(side="left", expand=True, fill="y",ipadx=50)
+    id_frame.pack(expand=True,side="left", fill="both",ipadx=50)
 
     info_frame = ctk.CTkScrollableFrame(main_frame,orientation="horizontal",fg_color="transparent")
-    info_frame.pack(side="right", expand=True, fill="both", ipadx=450)
+    info_frame.pack(side="left", expand=True, fill="both",ipadx=700)
     
-    botao_mostrar_todos_clientes = ctk.CTkButton(left_frame,text="Todos Clientes",font=("Poppins", 14), command=lambda:mostrar_clientes("Clientes",id_frame,info_frame))
-    botao_mostrar_todos_clientes.place(x=20,y=50)
-    
+    botao_mostrar_todos_clientes = ctk.CTkButton(left_frame,text="Todos Clientes",font=("Poppins", 15), 
+                                                 command=lambda:mostrar_clientes("Clientes",id_frame,info_frame,None,None))
+    botao_mostrar_todos_clientes.grid(row=0,column=0,sticky="w",padx=10,pady=20)
+
+    ctk.CTkLabel(left_frame,text="Filtrar ID",font=("Poppins Bold", 15)).grid(row=1,column=0,sticky="w",padx=10)
+    filtro_id = ctk.CTkEntry(left_frame,placeholder_text="Id",placeholder_text_color="gray")
+    filtro_id.grid(row=2,column=0,sticky="w",padx=10)
+
+    botao_mostrar_clientes_id = ctk.CTkButton(left_frame,text="Filtrar",font=("Poppins", 15), 
+                                              command=lambda:mostrar_clientes("Clientes",id_frame,info_frame,"id",filtro_id.get()))
+    botao_mostrar_clientes_id.grid(row=3,column=0,sticky="w",pady=10,padx=10)
 
 
 
@@ -957,7 +1034,7 @@ tela.geometry('1000x600')
 ctk.set_appearance_mode("light")
 
 add_image = ctk.CTkImage(Image.open("user.png"), size=(40,40))
-key_image = ctk.CTkImage(Image.open("key.png"), size=(30,30))
+key_image = ctk.CTkImage(Image.open("key.png"), size=(40,40))
 money_image = ctk.CTkImage(Image.open("money.png"), size=(20,20))
 tool_image = ctk.CTkImage(Image.open("tool.png"), size=(30,30))
 
@@ -972,22 +1049,23 @@ criar_frame.pack(side="right",fill="both",expand=True)
 
 solicitar_saldo(arquivo='saldo.json')
 
+
 ctk.CTkLabel(left_frame, text="Ferramentas",font=('Poppins Bold',15),anchor="w",
-                                                compound="left").grid(row=8,column=0,padx=20,pady=10,sticky="w")
+                                                compound="left").grid(row=9,column=0,padx=20,pady=10,sticky="w")
 
 botao_criar_clientes = ctk.CTkButton(left_frame, text="Adicionar Cliente",font=('Poppins',15),corner_radius=15,command=lambda:criar_clientes(criar_frame))
-botao_criar_clientes.grid(row=9,column=0,padx=20,pady=10,sticky="w",ipadx=4)
+botao_criar_clientes.grid(row=10,column=0,padx=20,pady=10,sticky="w",ipadx=4)
 
 botao_conta = ctk.CTkButton(left_frame,text="Adicionar Conta",font=('Poppins',15),corner_radius=15,command=lambda:criar_contas(criar_frame))
-botao_conta.grid(row=10,column=0,padx=20,pady=10,sticky="w",ipadx=6)
+botao_conta.grid(row=11,column=0,padx=20,pady=10,sticky="w",ipadx=6)
 
-ctk.CTkLabel(left_frame, text="Informações",font=('Poppins Bold',15),).grid(row=11,column=0,padx=20,pady=10,sticky="w")
+ctk.CTkLabel(left_frame, text="Informações",font=('Poppins Bold',15),).grid(row=12,column=0,padx=20,pady=10,sticky="w")
 
 botao_exibir_inf_contas = ctk.CTkButton(left_frame, text="Exibir Info Contas",font=('Poppins',15),corner_radius=15, command=exibir_informacoes_contas)
-botao_exibir_inf_contas.grid(row=12,column=0,padx=20,pady=10,sticky="w",ipadx=4)
+botao_exibir_inf_contas.grid(row=13,column=0,padx=20,pady=10,sticky="w",ipadx=4)
 
 botao_exibir_inf_clientes = ctk.CTkButton(left_frame, text="Exibir Info Clientes",font=('Poppins',15),corner_radius=15, command=exibir_informacoes_clientes)
-botao_exibir_inf_clientes.grid(row=13,column=0,padx=20,pady=10,sticky="w")
+botao_exibir_inf_clientes.grid(row=14,column=0,padx=20,pady=10,sticky="w")
 
 
 
