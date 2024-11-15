@@ -6,7 +6,7 @@ arquivos = ["caixa.ico", "imagens/"]
 
 config = Executable(
     script="app.py",
-    icon="caixa.ico"
+    icon="caixa.ico",
 )
 setup(
     name="Sistema Caixa",
