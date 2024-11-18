@@ -47,25 +47,25 @@ def solicitar_saldo(arquivo='saldo.json'):
             if saldo_existente is not None:
                 
                 label_saldo = ctk.CTkLabel(left_frame, text=f"Saldo: R${saldo_existente}", font=('Poppins',15),image=money_image, anchor="w",
-                                                        compound="left",fg_color="#3c8cd4",text_color="white",corner_radius=15)
+                                             width=180,compound="left",fg_color="#3c8cd4",text_color="white",corner_radius=15)
                 
-                label_saldo.grid(row=4,column=0,padx=15,pady=20,ipady=5,sticky="w")
+                label_saldo.grid(row=4,column=0,padx=0,pady=15,ipady=5)
 
                 label_alterar = ctk.CTkLabel(left_frame, text="Alterar o Saldo?",font=('Poppins',15))
-                label_alterar.grid(row=6,column=0,padx=22,sticky="w")
+                label_alterar.grid(row=6,column=0,padx=15,sticky="w")
 
                 entry_alterar = ctk.CTkEntry(left_frame,placeholder_text="Novo Saldo",placeholder_text_color='gray',font=('Poppins Bold',15))
-                entry_alterar.grid(row=7,column=0,padx=20,sticky="w")
+                entry_alterar.grid(row=7,column=0,padx=15,sticky="w")
 
-                botao_alterar = ctk.CTkButton(left_frame, text="Alterar saldo",font=('Poppins',15),corner_radius=15,
+                botao_alterar = ctk.CTkButton(left_frame, text="Alterar saldo",font=('Poppins',15),width=170,
                                               command=lambda:(alterar_saldo(entry_alterar.get(),arquivo='saldo.json'),
                                                              solicitar_saldo(arquivo='saldo.json')) )
-                botao_alterar.grid(row=8,column=0,pady=10,padx=20,sticky="w")
+                botao_alterar.grid(row=8,column=0,pady=10,padx=0)
 
-                botao_atualizar = ctk.CTkButton(left_frame, text="Atualizar",font=('Poppins',15),corner_radius=15,
-                                              command=lambda:(atualizar_saldo(arquivo='saldo.json'),
+                botao_atualizar = ctk.CTkButton(left_frame, text="Atualizar",font=('Poppins',15),
+                                              width=170,command=lambda:(atualizar_saldo(arquivo='saldo.json'),
                                                              solicitar_saldo(arquivo='saldo.json')) )
-                botao_atualizar.grid(row=5,column=0,pady=3,padx=20,sticky="w")
+                botao_atualizar.grid(row=5,column=0,pady=5,padx=0)
 
             else:
                 messagebox.showerror("Erro", "Arquivo de saldo encontrado, mas sem valor válido. Por favor, verifique o arquivo.")
@@ -2285,8 +2285,8 @@ def mostrar_entradas_saidas():
     left_frame = ctk.CTkFrame(criar_frame,fg_color="transparent",border_width=5,border_color="#C0C0C0")
     left_frame.pack(fill="both",expand=True, side="left")
 
-    frame_filtro = ctk.CTkFrame(left_frame, fg_color="transparent",width=140,height=200)
-    frame_filtro.place(x=30, y=300)
+    frame_filtro = ctk.CTkFrame(left_frame, fg_color="gray",width=140,height=200)
+    frame_filtro.place(x=14, y=300)
 
 
     def mostrar_todos(filtro,valor_filtro):
@@ -2320,6 +2320,10 @@ def mostrar_entradas_saidas():
             cursor.execute(f"SELECT * FROM movimentacao WHERE substr(tipo1, 15, 20)= ?", (valor_filtro,))
             resultados = cursor.fetchall()
         
+        elif filtro == "Mês":
+            cursor.execute(f"SELECT * FROM movimentacao WHERE substr(data, 4, 5) = ?", (valor_filtro,))
+            resultados = cursor.fetchall()
+ 
 
         else:
             cursor.execute(f"SELECT * FROM movimentacao WHERE {filtro} = ?", (valor_filtro,))
@@ -2379,9 +2383,9 @@ def mostrar_entradas_saidas():
         destruir_widgets(frame_filtro)
 
         
-        if selected_value == "Data":
+        if selected_value == "Dia":
 
-            ctk.CTkLabel(frame_filtro,text="Data",font=('Poppins Bold',15),text_color= "#484E55").place(x=0,y=0)
+            ctk.CTkLabel(frame_filtro,text="Dia",font=('Poppins Bold',15),text_color= "#484E55").place(x=0,y=0)
             data = ctk.CTkEntry(frame_filtro)
             data.place(x=0,y=30)
 
@@ -2389,6 +2393,39 @@ def mostrar_entradas_saidas():
 
             botao_filtro = ctk.CTkButton(frame_filtro,text="Filtrar", font=("Poppins",15),width=130,corner_radius=15,command=lambda:mostrar_todos("data", data.get()))
             botao_filtro.place(x=0,y=80)
+
+        if selected_value == "Mês":
+        
+            ctk.CTkLabel(frame_filtro,text="Mês",font=('Poppins Bold',15),text_color= "#484E55").place(x=0,y=0)
+            meses = {
+                "Janeiro": "01", "Fevereiro": "02", "Março": "03", "Abril": "04",
+                "Maio": "05", "Junho": "06", "Julho": "07", "Agosto": "08",
+                "Setembro": "09", "Outubro": "10", "Novembro": "11", "Dezembro": "12"
+            }
+            
+            mes_selecionado = ctk.StringVar(value="Janeiro") 
+
+            option_menu = ctk.CTkOptionMenu(
+                frame_filtro,
+                variable=mes_selecionado,
+                values=list(meses.keys()),  # Exibe os nomes dos meses
+                font=("Poppins", 15),
+                corner_radius=15
+            )
+            option_menu.pack(pady=(0, 10))
+
+
+
+            ctk.CTkLabel(frame_filtro,text="Ano",font=('Poppins Bold',15),text_color= "#484E55").place(x=0,y=0)
+            ano = ctk.CTkEntry(frame_filtro, font=('Poppins Bold',15), placeholder_text="24,25,..")
+            ano.place(x=0,y=30)
+
+
+
+           
+
+
+
 
 
         if selected_value == "Tipo":
@@ -2439,24 +2476,28 @@ def mostrar_entradas_saidas():
 
     
 
-    botao_todos = ctk.CTkButton(left_frame, text="Todas",font=('Poppins',15),corner_radius=15, width=130, command=lambda:mostrar_todos(None,None))
-    botao_todos.place(x=20, y=50)
+    ctk.CTkLabel(left_frame, text="Registros",font=('Poppins Bold',16),anchor="w", image= edit_image, height=20,
+                compound="left").place(x=14, y=10)
 
-    botao_entradas = ctk.CTkButton(left_frame, text="Entradas",font=('Poppins',15),corner_radius=15, width=130, command=lambda:mostrar_todos("tipo","Entrada"))
-    botao_entradas.place(x=20, y=100)
 
-    botao_saidas = ctk.CTkButton(left_frame, text="Saídas",font=('Poppins',15),corner_radius=15, width=130, command=lambda:mostrar_todos("tipo","Saída"))
-    botao_saidas.place(x=20, y=150)
+    botao_todos = ctk.CTkButton(left_frame, text="Todas",font=('Poppins',15), width=165, command=lambda:mostrar_todos(None,None))
+    botao_todos.place(x=10, y=50)
+
+    botao_entradas = ctk.CTkButton(left_frame, text="Entradas",font=('Poppins',15),width=165,command=lambda:mostrar_todos("tipo","Entrada"))
+    botao_entradas.place(x=10, y=90)
+
+    botao_saidas = ctk.CTkButton(left_frame, text="Saídas",font=('Poppins',15),width=165,command=lambda:mostrar_todos("tipo","Saída"))
+    botao_saidas.place(x=10, y=130)
 
     
 
-    ctk.CTkLabel(left_frame, text="Filtrar", font=('Poppins Bold',17)).place(x=30, y=215)
+    ctk.CTkLabel(left_frame, text="Filtrar", font=('Poppins Bold',16)).place(x=20, y=215)
 
 
     def on_option_change_filtros(choice):
         filtrar(choice)
     
-    filtros_options = ["Data", "Tipo", "Valor"] 
+    filtros_options = ["Dia", "Mês", "Tipo", "Valor"] 
     filtros_menu = ctk.CTkOptionMenu(    
     master=left_frame, 
     values=filtros_options, 
@@ -2467,7 +2508,7 @@ def mostrar_entradas_saidas():
     dropdown_fg_color="#3c8cd4",
     dropdown_text_color="white"
     )
-    filtros_menu.place(x=28, y=250)
+    filtros_menu.place(x=14, y=250)
     
 
     mostrar_todos(None,None)
@@ -3129,6 +3170,10 @@ crown_image = ctk.CTkImage(Image.open("imagens/crown.png"), size=(20,20))
 primeiro_image = ctk.CTkImage(Image.open("imagens/medal.png"), size=(30,30))
 segundo_image = ctk.CTkImage(Image.open("imagens/medal2.png"), size=(30,30))
 terceiro_image = ctk.CTkImage(Image.open("imagens/medal3.png"), size=(30,30))
+settings_image = ctk.CTkImage(Image.open("imagens/settings.png"), size=(30,30))
+info_image = ctk.CTkImage(Image.open("imagens/info.png"), size=(20,20))
+corret_image = ctk.CTkImage(Image.open("imagens/corret.png"), size=(20,20))
+edit_image = ctk.CTkImage(Image.open("imagens/edit.png"), size=(20,20))
 
 
 main_frame = ctk.CTkFrame(tela,fg_color="transparent")
@@ -3143,41 +3188,42 @@ criar_frame.pack(side="right",fill="both",padx=10,pady=20,expand=True)
 solicitar_saldo(arquivo='saldo.json')
 
 
-ctk.CTkLabel(left_frame, text="Ferramentas",font=('Poppins Bold',15),anchor="w",
-                                                compound="left").grid(row=9,column=0,padx=20,pady=10,sticky="w")
+ctk.CTkLabel(left_frame, text="Ferramentas",font=('Poppins Bold',16),anchor="w", image= settings_image, height=20, 
+            compound="left").grid(row=9,column=0,padx=0,pady=10,sticky="w")
 
-botao_criar_clientes = ctk.CTkButton(left_frame, text="Adicionar Cliente",font=('Poppins',15),corner_radius=15,command=lambda:criar_clientes(criar_frame))
-botao_criar_clientes.grid(row=11,column=0,padx=20,pady=10,sticky="w",ipadx=4)
+botao_criar_clientes = ctk.CTkButton(left_frame, text="Adicionar Cliente",font=('Poppins',15), width=170,command=lambda:criar_clientes(criar_frame))
+botao_criar_clientes.grid(row=11,column=0,padx=0,pady=5,sticky="w",ipadx=15)
 
-botao_conta = ctk.CTkButton(left_frame,text="Adicionar Conta",font=('Poppins',15),corner_radius=15,command=lambda:criar_contas(criar_frame))
-botao_conta.grid(row=12,column=0,padx=20,pady=10,sticky="w",ipadx=6)
+botao_conta = ctk.CTkButton(left_frame,text="Adicionar Conta",font=('Poppins',15),width=170,command=lambda:criar_contas(criar_frame))
+botao_conta.grid(row=12,column=0,padx=0,pady=5,sticky="w",ipadx=15)
 
-ctk.CTkLabel(left_frame, text="Informações",font=('Poppins Bold',15),).grid(row=13,column=0,padx=20,pady=10,sticky="w")
+ctk.CTkLabel(left_frame, text=" Informações",font=('Poppins Bold',16),anchor="w", image= info_image, height=20,
+            compound="left").grid(row=13,column=0,padx=3,pady=10,sticky="w")
 
-botao_exibir_inf_contas = ctk.CTkButton(left_frame, text="Exibir Info Contas",font=('Poppins',15),corner_radius=15, width=175, command=exibir_informacoes_contas)
-botao_exibir_inf_contas.grid(row=14,column=0,padx=20,pady=10,sticky="w",ipadx=4)
+botao_exibir_inf_contas = ctk.CTkButton(left_frame, text="Exibir Info Contas",font=('Poppins',15),width=170, command=exibir_informacoes_contas)
+botao_exibir_inf_contas.grid(row=14,column=0,padx=0,pady=5,sticky="w",ipadx=15)
 
-botao_exibir_inf_clientes = ctk.CTkButton(left_frame, text="Exibir Info Clientes",font=('Poppins',15),corner_radius=15,width=180, command=exibir_informacoes_clientes)
-botao_exibir_inf_clientes.grid(row=15,column=0,padx=20,pady=10,sticky="w")
+botao_exibir_inf_clientes = ctk.CTkButton(left_frame, text="Exibir Info Clientes",font=('Poppins',15),width=170, command=exibir_informacoes_clientes)
+botao_exibir_inf_clientes.grid(row=15,column=0,padx=0,pady=5,sticky="w",ipadx=15)
 
-botao_entradas_saidas = ctk.CTkButton(left_frame, text="Gerar Registro",font=('Poppins',15),corner_radius=15, command=gerar_entradas_saidas)
-botao_entradas_saidas.grid(row=10,column=0,padx=20,pady=10,ipadx=15,sticky="w")
+botao_entradas_saidas = ctk.CTkButton(left_frame, text="Gerar Registro",font=('Poppins',15), width=170, command=gerar_entradas_saidas)
+botao_entradas_saidas.grid(row=10,column=0,padx=0,pady=5,ipadx=15,sticky="w")
 
-botao_relatorio = ctk.CTkButton(left_frame, text="Relatorio Registros",font=('Poppins',15),corner_radius=15,width=180, command=mostrar_entradas_saidas)
-botao_relatorio.grid(row=16,column=0,padx=20,pady=10,sticky="w")
+botao_relatorio = ctk.CTkButton(left_frame, text="Relatorio Registros",font=('Poppins',15),width=170, command=mostrar_entradas_saidas)
+botao_relatorio.grid(row=16,column=0,padx=0,pady=5,sticky="w",ipadx=15)
 
-ctk.CTkLabel(left_frame, text="Corretores",font=('Poppins Bold',15),).grid(row=17,column=0,padx=20,pady=10,sticky="w")
+ctk.CTkLabel(left_frame, text=" Corretores",font=('Poppins Bold',16),anchor="w", image= corret_image,
+             height=20,compound="left").grid(row=17,column=0,padx=3,pady=10,sticky="w")
 
-botao_criar_corretor = ctk.CTkButton(left_frame, text="Cadastrar Corretor",font=('Poppins',15),corner_radius=15,width=150, command=cadastrar_corretor)
-botao_criar_corretor.grid(row=18,column=0,padx=20,pady=10,sticky="w",ipadx=4)
+botao_criar_corretor = ctk.CTkButton(left_frame, text="Cadastrar Corretor",font=('Poppins',15),width=170, command=cadastrar_corretor)
+botao_criar_corretor.grid(row=18,column=0,padx=0,pady=5,sticky="w",ipadx=15)
 
-botao_exibir_inf_corretores = ctk.CTkButton(left_frame, text="Info Corretores",font=('Poppins',15),corner_radius=15,width=180, command=mostrar_corretores)
-botao_exibir_inf_corretores.grid(row=19,column=0,padx=20,pady=10,sticky="w")
+botao_exibir_inf_corretores = ctk.CTkButton(left_frame, text="Info Corretores",font=('Poppins',15),width=170, command=mostrar_corretores)
+botao_exibir_inf_corretores.grid(row=19,column=0,padx=0,pady=5,sticky="w",ipadx=15)
 
 
-botao_ranking = ctk.CTkButton(left_frame, text="Ranking",font=('Poppins',15),corner_radius=15,image=crown_image,
-                                            anchor="w", compound="left", command=ranking)
-botao_ranking.grid(row=20,column=0,padx=20,pady=10)
+botao_ranking = ctk.CTkButton(left_frame, text="Ranking",font=('Poppins',15),width=170,image=crown_image,command=ranking)
+botao_ranking.grid(row=20,column=0,padx=0,pady=5,ipadx=15,sticky="w")
 
 
 tela.mainloop()
