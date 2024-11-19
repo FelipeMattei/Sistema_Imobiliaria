@@ -2285,7 +2285,7 @@ def mostrar_entradas_saidas():
     left_frame = ctk.CTkFrame(criar_frame,fg_color="transparent",border_width=5,border_color="#C0C0C0")
     left_frame.pack(fill="both",expand=True, side="left")
 
-    frame_filtro = ctk.CTkFrame(left_frame, fg_color="gray",width=140,height=200)
+    frame_filtro = ctk.CTkFrame(left_frame, fg_color="transparent",width=140,height=200)
     frame_filtro.place(x=14, y=300)
 
 
@@ -2321,10 +2321,16 @@ def mostrar_entradas_saidas():
             resultados = cursor.fetchall()
         
         elif filtro == "Mês":
-            cursor.execute(f"SELECT * FROM movimentacao WHERE substr(data, 4, 5) = ?", (valor_filtro,))
+            meses = valor_filtro[0]
+            mes_selecionado = valor_filtro[1]
+            ano = valor_filtro[2]
+
+            mes = meses[mes_selecionado]
+
+            data_filtrada = f"{mes}/{ano}"
+            cursor.execute(f"SELECT * FROM movimentacao WHERE substr(data, 4, 5) = ?", (data_filtrada,))
             resultados = cursor.fetchall()
  
-
         else:
             cursor.execute(f"SELECT * FROM movimentacao WHERE {filtro} = ?", (valor_filtro,))
             resultados = cursor.fetchall()
@@ -2408,24 +2414,21 @@ def mostrar_entradas_saidas():
             option_menu = ctk.CTkOptionMenu(
                 frame_filtro,
                 variable=mes_selecionado,
-                values=list(meses.keys()),  # Exibe os nomes dos meses
+                values=list(meses.keys()),  
                 font=("Poppins", 15),
-                corner_radius=15
+                dropdown_font=("Poppins", 13),  
+                button_color="lightblue",  
+                dropdown_fg_color="#3c8cd4",
+                dropdown_text_color="white"
             )
-            option_menu.pack(pady=(0, 10))
+            option_menu.place(x=0,y=30)
 
-
-
-            ctk.CTkLabel(frame_filtro,text="Ano",font=('Poppins Bold',15),text_color= "#484E55").place(x=0,y=0)
+            ctk.CTkLabel(frame_filtro,text="Ano",font=('Poppins Bold',15),text_color= "#484E55").place(x=0,y=70)
             ano = ctk.CTkEntry(frame_filtro, font=('Poppins Bold',15), placeholder_text="24,25,..")
-            ano.place(x=0,y=30)
+            ano.place(x=0,y=100)
 
-
-
-           
-
-
-
+            botao_filtro = ctk.CTkButton(frame_filtro,text="Filtrar", font=("Poppins",15),width=140,command=lambda:mostrar_todos("Mês", [meses, mes_selecionado.get(), ano.get()]))
+            botao_filtro.place(x=0,y=140)
 
 
         if selected_value == "Tipo":
@@ -2453,7 +2456,7 @@ def mostrar_entradas_saidas():
 
             conta_option_menu = ctk.CTkOptionMenu(frame_filtro, values=opcoes, 
             command=option_selected,
-            font=("Poppins", 13),
+            font=("Poppins", 15),
             dropdown_font=("Poppins", 13),  
             button_color="lightblue",  
             dropdown_fg_color="#3c8cd4",
