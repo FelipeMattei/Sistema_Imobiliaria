@@ -46,31 +46,29 @@ def solicitar_saldo(arquivo='saldo.json'):
             
             if saldo_existente is not None:
                 
-                label_saldo = ctk.CTkLabel(left_frame, text=f"Saldo: R${saldo_existente}", font=('Poppins',15),image=money_image, anchor="w",
-                                             width=180,compound="left",fg_color="#3c8cd4",text_color="white",corner_radius=15)
+                label_saldo = ctk.CTkLabel(left_frame, text=f" Saldo: R${saldo_existente}", font=('Poppins',15),image=money_image, anchor="w",
+                                             width=185,compound="left",fg_color="#3c8cd4",text_color="white",corner_radius=15)
                 
-                label_saldo.grid(row=4,column=0,padx=0,pady=15,ipady=5)
+                label_saldo.grid(row=4,column=0,padx=0,pady=5,ipady=5)
 
-                label_alterar = ctk.CTkLabel(left_frame, text="Alterar o Saldo?",font=('Poppins',15))
-                label_alterar.grid(row=6,column=0,padx=15,sticky="w")
+                label_alterar = ctk.CTkLabel(left_frame, text="Alterar o Saldo?",font=('Poppins Bold',15))
+                label_alterar.grid(row=6,column=0,padx=8,pady=5,sticky="w")
+ 
+                entry_alterar = ctk.CTkEntry(left_frame,placeholder_text="Novo Saldo",placeholder_text_color='gray',font=('Poppins Bold',15), width=190)
+                entry_alterar.grid(row=7,column=0,padx=5,sticky="w")
 
-                entry_alterar = ctk.CTkEntry(left_frame,placeholder_text="Novo Saldo",placeholder_text_color='gray',font=('Poppins Bold',15))
-                entry_alterar.grid(row=7,column=0,padx=15,sticky="w")
-
-                botao_alterar = ctk.CTkButton(left_frame, text="Alterar saldo",font=('Poppins',15),width=170,
+                botao_alterar = ctk.CTkButton(left_frame, text="Alterar saldo",font=('Poppins',15),width=190,fg_color="#e32551",
                                               command=lambda:(alterar_saldo(entry_alterar.get(),arquivo='saldo.json'),
                                                              solicitar_saldo(arquivo='saldo.json')) )
-                botao_alterar.grid(row=8,column=0,pady=10,padx=0)
+                botao_alterar.grid(row=8,column=0,pady=10,padx=5,sticky='w')
 
                 botao_atualizar = ctk.CTkButton(left_frame, text="Atualizar",font=('Poppins',15),
-                                              width=170,command=lambda:(atualizar_saldo(arquivo='saldo.json'),
+                                              width=190,command=lambda:(atualizar_saldo(arquivo='saldo.json'),
                                                              solicitar_saldo(arquivo='saldo.json')) )
-                botao_atualizar.grid(row=5,column=0,pady=5,padx=0)
+                botao_atualizar.grid(row=5,column=0,pady=15,padx=0)
 
             else:
                 messagebox.showerror("Erro", "Arquivo de saldo encontrado, mas sem valor válido. Por favor, verifique o arquivo.")
-
-
 
 
 
@@ -282,8 +280,7 @@ def criar_clientes(tela):
 
         global valor_venda
         global valor_aluguel
-        global valor_pri_aluguel
-        global valor_caucao
+        global dia_pg
         global entry_parcelas
         global entry_valor_parcelas
         global entry_entrada
@@ -328,18 +325,14 @@ def criar_clientes(tela):
             label_aluguel.place(x=0,y=0)
             valor_aluguel = ctk.CTkEntry(frame_tipo,width=180,font=("Poppins", 15))
             valor_aluguel.place(x=0, y=40)
-            label_pri_aluguel = ctk.CTkLabel(frame_tipo,text="Valor 1° Aluguel", font=('Poppins', 16))
-            label_pri_aluguel.place(x=0,y=100)
-            valor_pri_aluguel = ctk.CTkEntry(frame_tipo,width=180,font=("Poppins", 15))
-            valor_pri_aluguel.place(x=0, y=140)
-            label_caucao = ctk.CTkLabel(frame_tipo,text="Valor Caução", font=('Poppins', 16))
-            label_caucao.place(x=0,y=200)
-            valor_caucao = ctk.CTkEntry(frame_tipo,width=180,font=("Poppins", 15))
-            valor_caucao.place(x=0, y=240)
+            label_pg = ctk.CTkLabel(frame_tipo,text="Dia Pagamento", font=('Poppins', 16))
+            label_pg.place(x=0,y=100)
+            dia_pg = ctk.CTkEntry(frame_tipo,width=180,font=("Poppins", 15))
+            dia_pg.place(x=0, y=140)
 
             id.bind("<Return>", lambda event: ir_para_proximo_entry(event, valor_aluguel))
-            valor_aluguel.bind("<Return>", lambda event: ir_para_proximo_entry(event,valor_pri_aluguel))
-            valor_pri_aluguel.bind("<Return>", lambda event: ir_para_proximo_entry(event,valor_caucao))
+            valor_aluguel.bind("<Return>", lambda event: ir_para_proximo_entry(event,dia_pg))
+            
 
 
     def on_option_change_tipo(choice):
@@ -363,10 +356,12 @@ def criar_clientes(tela):
 
 
 
-    label_tipo = ctk.CTkLabel(tela,text="Serviço requisitado", font=('Poppins Bold', 16))
+    label_tipo = ctk.CTkLabel(tela,text="Serviço requisitado *", font=('Poppins Bold', 16))
     label_tipo.place(x=50,y=30)
     tipo_options = ["Venda", "Aluguel"]
+    tipo_selecionado = ctk.StringVar(value="Selecionar")
     tipo_menu = ctk.CTkOptionMenu(
+        variable= tipo_selecionado,
         master=tela,
         width=165, 
         values=tipo_options, 
@@ -401,6 +396,7 @@ def criar_clientes(tela):
                     nome_locador TEXT NOT NULL,
                     nome_locatario TEXT NOT NULL,
                     data TEXT NOT NULL,
+                    dia_pg TEXT NOT NULL,
                     corretor1 TEXT NOT NULL,
                     comissao1 FLOAT NOT NULL,
                     corretor2 TEXT,
@@ -454,8 +450,9 @@ def criar_clientes(tela):
         #ALUGUEL
         else:
             valor_al = valor_aluguel.get()
-            primeiro_aluguel = valor_pri_aluguel.get()
-            caucao = valor_caucao.get()
+            primeiro_aluguel = valor_aluguel.get()
+            caucao = valor_aluguel.get()
+            pagamento = dia_pg.get()
             valor = None
             entrada = None
             royalties = 0.09 * float(primeiro_aluguel)
@@ -501,14 +498,14 @@ def criar_clientes(tela):
             cursor.execute('''
                 INSERT INTO Clientes (
                 id, tipo, valor, valor_aluguel, entrada,
-                primeiro_aluguel, caucao, nome_locador, nome_locatario, data,
+                primeiro_aluguel, caucao, nome_locador, nome_locatario, data, dia_pg,
                 corretor1, comissao1, corretor2, comissao2, corretor3, comissao3,
                 corretor4, comissao4, royalties
                 )
-                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
                 ''', (
                 Id, tipo, valor, valor_al, entrada,
-                primeiro_aluguel, caucao, Nome_locador, Nome_locatario, data_inicio,
+                primeiro_aluguel, caucao, Nome_locador, Nome_locatario, data_inicio, pagamento,
                 Corretor1, Comissao1, Corretor2, Comissao2, Corretor3, Comissao3,
                 Corretor4, Comissao4, royalties
                 ))
@@ -678,7 +675,7 @@ def mostrar_contas(nome_tabela, filtro, valor_filtro, frame, janela):
                 if check.get() == 1: 
                     id, tipo, fornecedor, valor, data_pg = conta 
 
-                    cursor.execute("DELETE FROM ContasPagas WHERE id=?", (id,))
+                    cursor.execute(f"DELETE FROM {nome_tabela} WHERE id=?", (id,))
 
             conex.commit()
             conex.close()
@@ -690,6 +687,9 @@ def mostrar_contas(nome_tabela, filtro, valor_filtro, frame, janela):
         if nome_tabela == "Contas":
             botao_pagar_contas = ctk.CTkButton(frame, text="Pagar Contas", command=marcar_pagamento)
             botao_pagar_contas.grid(row=i+1,column=2)
+
+            botao_deletar = ctk.CTkButton(frame, text="Deletar Contas", fg_color="#b95557", hover_color="#bd3038", command=deletar_contas)
+            botao_deletar.grid(row=i+1,column=4)
 
         if nome_tabela == "ContasPagas":
             botao_deletar = ctk.CTkButton(frame, text="Deletar Contas", command=deletar_contas)
@@ -1435,7 +1435,7 @@ def mostrar_info_clientes(tabela,id_cliente,frame,):
 
             if var_corretor1.get():
                 ctk.CTkLabel(frame_main, text="Novas Informações Corretor 1:", font=("Poppins", 14)).grid(row=row_counter, column=0, padx=20, pady=10, sticky="w")
-                entries["corretor1"] = ctk.CTkEntry(frame_main, placeholder_text=f"{cliente[10]}")
+                entries["corretor1"] = ctk.CTkEntry(frame_main, placeholder_text=f"{cliente[11]}")
                 entries["corretor1"].grid(row=row_counter, column=1, padx=10, pady=10, sticky="w")
                 entries["comissao1"] = ctk.CTkEntry(frame_main, width=60, placeholder_text=f"{2 * float(comissao_1)}")
                 entries["comissao1"].grid(row=row_counter, column=2, pady=10, padx=5, sticky="w")
@@ -1443,15 +1443,15 @@ def mostrar_info_clientes(tabela,id_cliente,frame,):
 
             if var_corretor2.get():
                 ctk.CTkLabel(frame_main, text="Novas Informações Corretor 2:", font=("Poppins", 14)).grid(row=row_counter, column=0, padx=20, pady=10, sticky="w")
-                entries["corretor2"] = ctk.CTkEntry(frame_main, placeholder_text=f"{cliente[12]}")  # Supondo que cliente[12] seja o nome do corretor 2
+                entries["corretor2"] = ctk.CTkEntry(frame_main, placeholder_text=f"{cliente[13]}")  # Supondo que cliente[12] seja o nome do corretor 2
                 entries["corretor2"].grid(row=row_counter, column=1, padx=10, pady=10, sticky="w")
                 entries["comissao2"] = ctk.CTkEntry(frame_main, width=60, placeholder_text=f"{2 * float(comissao_2)}")  # Supondo que cliente[13] seja a comissão do corretor 2
                 entries["comissao2"].grid(row=row_counter, column=2, pady=10, padx=5, sticky="w")
                 row_counter += 1
 
             if var_corretor3.get():
-                ctk.CTkLabel(frame_main, text="Novas Informações Corretor 3:", font=("Poppins", 14)).grid(row=row_counter, column=0, padx=20, pady=10, sticky="w")
-                entries["corretor3"] = ctk.CTkEntry(frame_main, placeholder_text=f"{cliente[14]}")  # Supondo que cliente[14] seja o nome do corretor 3
+                ctk.CTkLabel(frame_main, text="Novas Informações Corretor 3:", font=("Poppins", 15)).grid(row=row_counter, column=0, padx=20, pady=10, sticky="w")
+                entries["corretor3"] = ctk.CTkEntry(frame_main, placeholder_text=f"{cliente[15]}")  # Supondo que cliente[14] seja o nome do corretor 3
                 entries["corretor3"].grid(row=row_counter, column=1, padx=10, pady=10, sticky="w")
                 entries["comissao3"] = ctk.CTkEntry(frame_main, width=60, placeholder_text=f"{2 * float(comissao_3)}")  # Supondo que cliente[15] seja a comissão do corretor 3
                 entries["comissao3"].grid(row=row_counter, column=2, pady=10, padx=5, sticky="w")
@@ -1459,7 +1459,7 @@ def mostrar_info_clientes(tabela,id_cliente,frame,):
 
             if var_corretor4.get():
                 ctk.CTkLabel(frame_main, text="Novas Informações Corretor 4:", font=("Poppins", 14)).grid(row=row_counter, column=0, padx=20, pady=10, sticky="w")
-                entries["corretor4"] = ctk.CTkEntry(frame_main, placeholder_text=f"{cliente[16]}")  # Supondo que cliente[16] seja o nome do corretor 4
+                entries["corretor4"] = ctk.CTkEntry(frame_main, placeholder_text=f"{cliente[17]}")  # Supondo que cliente[16] seja o nome do corretor 4
                 entries["corretor4"].grid(row=row_counter, column=1, padx=10, pady=10, sticky="w")
                 entries["comissao4"] = ctk.CTkEntry(frame_main, width=60, placeholder_text=f"{2 * float(comissao_4)}")  # Supondo que cliente[17] seja a comissão do corretor 4
                 entries["comissao4"].grid(row=row_counter, column=2, pady=10, padx=5, sticky="w")
@@ -1594,7 +1594,7 @@ def mostrar_info_clientes(tabela,id_cliente,frame,):
 
 
 
-    def meses_pagamento(data,id,valor,primeiro,com1,com2,com3,com4,tipo_cliente): 
+    def meses_pagamento(dia_pg,data,id,valor,primeiro,com1,com2,com3,com4,tipo_cliente): 
 
         db_path = 'Banco_de_Dados.db'
 
@@ -1618,7 +1618,7 @@ def mostrar_info_clientes(tabela,id_cliente,frame,):
         if tipo_cliente == "Aluguel":
 
             quantidade = 12
-            dia = int(dia)
+            dia = int(dia_pg)
             mes = int(mes)
             ano = int(ano)
 
@@ -1696,13 +1696,13 @@ def mostrar_info_clientes(tabela,id_cliente,frame,):
                 ''', (comissao, corretor_nome))
 
             if com1 != 0:
-                atualizar_corretor(cliente[10], (com1 / 100) * primeiro)
+                atualizar_corretor(cliente[11], (com1 / 100) * primeiro)
             if com2 != 0:
-                atualizar_corretor(cliente[12], (com2 / 100) * primeiro)
+                atualizar_corretor(cliente[13], (com2 / 100) * primeiro)
             if com3 != 0:
-                atualizar_corretor(cliente[14], (com3 / 100) * primeiro)
+                atualizar_corretor(cliente[15], (com3 / 100) * primeiro)
             if com4 != 0:
-                atualizar_corretor(cliente[16], (com4 / 100) * primeiro)
+                atualizar_corretor(cliente[17], (com4 / 100) * primeiro)
 
 
 
@@ -1724,28 +1724,28 @@ def mostrar_info_clientes(tabela,id_cliente,frame,):
                 INSERT INTO movimentacao (tipo,tipo1,descricao,valor,data)
                 VALUES (?,?,?,?,?)
 
-                ''', ("Saída", f"Comissão de {2*com1}% /" + f"Corretor: {cliente[10]}", f" ID: {id}", (com1/100)*primeiro, data_inicial))
+                ''', ("Saída", f"Comissão de {2*com1}% /" + f"Corretor: {cliente[11]}", f" ID: {id}", (com1/100)*primeiro, data_inicial))
             
             if com2 != 0:
                 cursor.execute('''
                 INSERT INTO movimentacao (tipo,tipo1,descricao,valor,data)
                 VALUES (?,?,?,?,?)
 
-                ''', ("Saída", f"Comissão de {2*com2}% /" + f"Corretor: {cliente[12]}", f" ID: {id}", (com2/100)*primeiro, data_inicial))
+                ''', ("Saída", f"Comissão de {2*com2}% /" + f"Corretor: {cliente[13]}", f" ID: {id}", (com2/100)*primeiro, data_inicial))
 
             if com3 != 0:
                 cursor.execute('''
                 INSERT INTO movimentacao (tipo,tipo1,descricao,valor,data)
                 VALUES (?,?,?,?,?)
 
-                ''', ("Saída", f"Comissão de {2*com3}% /" + f"Corretor: {cliente[14]}", f" ID: {id}", (com3/100)*primeiro, data_inicial))
+                ''', ("Saída", f"Comissão de {2*com3}% /" + f"Corretor: {cliente[15]}", f" ID: {id}", (com3/100)*primeiro, data_inicial))
             
             if com4 != 0:
                 cursor.execute('''
                 INSERT INTO movimentacao (tipo,tipo1,descricao,valor,data)
                 VALUES (?,?,?,?,?)
 
-                ''', ("Saída", f"Comissão de {2*com4}% /" + f"Corretor: {cliente[16]}", f" ID: {id}", (com4/100)*primeiro, data_inicial))
+                ''', ("Saída", f"Comissão de {2*com4}% /" + f"Corretor: {cliente[17]}", f" ID: {id}", (com4/100)*primeiro, data_inicial))
 
             
 
@@ -1862,13 +1862,13 @@ def mostrar_info_clientes(tabela,id_cliente,frame,):
                 ''', (comissao, corretor_nome))
 
             if com1 != 0:
-                atualizar_corretor_venda(cliente[10], (com1 / 100) * valor_trabalhar)
+                atualizar_corretor_venda(cliente[11], (com1 / 100) * valor_trabalhar)
             if com2 != 0:
-                atualizar_corretor_venda(cliente[12], (com2 / 100) * valor_trabalhar)
+                atualizar_corretor_venda(cliente[13], (com2 / 100) * valor_trabalhar)
             if com3 != 0:
-                atualizar_corretor_venda(cliente[14], (com3 / 100) * valor_trabalhar)
+                atualizar_corretor_venda(cliente[15], (com3 / 100) * valor_trabalhar)
             if com4 != 0:
-                atualizar_corretor_venda(cliente[16], (com4 / 100) * valor_trabalhar)
+                atualizar_corretor_venda(cliente[17], (com4 / 100) * valor_trabalhar)
 
 
             cursor.execute('''
@@ -1888,28 +1888,28 @@ def mostrar_info_clientes(tabela,id_cliente,frame,):
                 INSERT INTO movimentacao (tipo,tipo1,descricao,valor,data)
                 VALUES (?,?,?,?,?)
 
-                ''', ("Saída", f"Comissão de {2*com1}% /" + f"Corretor: {cliente[10]}", f" ID: {id}", (com1/100)*valor_trabalhar, data_inicial))
+                ''', ("Saída", f"Comissão de {2*com1}% /" + f"Corretor: {cliente[11]}", f" ID: {id}", (com1/100)*valor_trabalhar, data_inicial))
             
             if com2 != 0:
                 cursor.execute('''
                 INSERT INTO movimentacao (tipo,tipo1,descricao,valor,data)
                 VALUES (?,?,?,?,?)
 
-                ''', ("Saída", f"Comissão de {2*com2}% /" + f"Corretor: {cliente[12]}", f" ID: {id}", (com2/100)*valor_trabalhar, data_inicial))
+                ''', ("Saída", f"Comissão de {2*com2}% /" + f"Corretor: {cliente[13]}", f" ID: {id}", (com2/100)*valor_trabalhar, data_inicial))
 
             if com3 != 0:
                 cursor.execute('''
                 INSERT INTO movimentacao (tipo,tipo1,descricao,valor,data)
                 VALUES (?,?,?,?,?)
 
-                ''', ("Saída", f"Comissão de {2*com3}% /" + f"Corretor: {cliente[14]}", f" ID: {id}", (com3/100)*valor_trabalhar, data_inicial))
+                ''', ("Saída", f"Comissão de {2*com3}% /" + f"Corretor: {cliente[15]}", f" ID: {id}", (com3/100)*valor_trabalhar, data_inicial))
             
             if com4 != 0:
                 cursor.execute('''
                 INSERT INTO movimentacao (tipo,tipo1,descricao,valor,data)
                 VALUES (?,?,?,?,?)
 
-                ''', ("Saída", f"Comissão de {2*com4}% /" + f"Corretor: {cliente[16]}", f" ID: {id}", (com4/100)*valor_trabalhar, data_inicial))
+                ''', ("Saída", f"Comissão de {2*com4}% /" + f"Corretor: {cliente[17]}", f" ID: {id}", (com4/100)*valor_trabalhar, data_inicial))
 
 
             
@@ -1953,16 +1953,17 @@ def mostrar_info_clientes(tabela,id_cliente,frame,):
         calcao = cliente[6]                   # caucao
         nome_locador = cliente[7]             # nome_locador
         nome_locatario = cliente[8]          # nome_locatario
-        data = cliente[9]                    # data
-        corretor_1 = cliente[10]              # corretor1
-        comissao_1 = cliente[11]              # comissao1
-        corretor_2 = cliente[12]              # corretor2
-        comissao_2 = cliente[13]              # comissao2
-        corretor_3 = cliente[14]              # corretor3
-        comissao_3 = cliente[15]              # comissao3
-        corretor_4 = cliente[16]              # corretor4
-        comissao_4 = cliente[17]  
-        royalties = cliente[18]
+        data = cliente[9]
+        data_paga = cliente[10]                    
+        corretor_1 = cliente[11]              # corretor1
+        comissao_1 = cliente[12]              # comissao1
+        corretor_2 = cliente[13]              # corretor2
+        comissao_2 = cliente[14]              # comissao2
+        corretor_3 = cliente[15]              # corretor3
+        comissao_3 = cliente[16]              # comissao3
+        corretor_4 = cliente[17]              # corretor4
+        comissao_4 = cliente[18]  
+        royalties = cliente[19]
 
 
     if comissao_1 == None:
@@ -1989,11 +1990,11 @@ def mostrar_info_clientes(tabela,id_cliente,frame,):
     ctk.CTkLabel(frame, text=f"Tipo: {tipo}", font=("Poppins", 14)).grid(row=2, column=0, padx=10, pady=10, sticky="w")
     ctk.CTkLabel(frame, text=f"Locador: {nome_locador}", font=("Poppins", 14)).grid(row=3, column=0, padx=10, pady=10, sticky="w")
     ctk.CTkLabel(frame, text=f"Locatário: {nome_locatario}", font=("Poppins", 14)).grid(row=4, column=0, padx=10, pady=10, sticky="w")
-    ctk.CTkLabel(frame, text=f"Data: {data}", font=("Poppins", 14)).grid(row=5, column=0, padx=10, pady=10, sticky="w")
+    ctk.CTkLabel(frame, text=f"Data Contrato: {data}", font=("Poppins", 14)).grid(row=5, column=0, padx=10, pady=10, sticky="w")
 
     botao_atualizar_dados = ctk.CTkButton(frame,text="Alterar Dados", font=("Poppins", 14),
                                         command= atualizar_cliente)
-    botao_atualizar_dados.grid(row=12,column=1,padx=10,pady=10,sticky="w")
+    botao_atualizar_dados.grid(row=12,column=1,padx=10,pady=0,sticky="w")
 
     botao_deletar =  ctk.CTkButton(frame,text="Deletar Cliente", font=("Poppins", 14), fg_color="#b95557", hover_color="#bd3038",
                                         command= deletar_cliente)
@@ -2028,7 +2029,7 @@ def mostrar_info_clientes(tabela,id_cliente,frame,):
 
             data_init, valor_entrada = valores_al
 
-            ctk.CTkLabel(frame,text=f"Data: {data_init}",font=("Poppins", 14)).grid(row=9, column=0, padx=10, pady=10, sticky="w")
+            ctk.CTkLabel(frame,text=f"Data 1° Pagamento: {data_init}",font=("Poppins", 14)).grid(row=9, column=0, padx=10, pady=10, sticky="w")
             ctk.CTkLabel(frame,text=f"Entrada: R$ {valor_entrada}",font=("Poppins", 14)).grid(row=10, column=0, padx=10, pady=10, sticky="w")
 
             
@@ -2041,7 +2042,7 @@ def mostrar_info_clientes(tabela,id_cliente,frame,):
         
         if resultado == None:
             botao_criar_meses_pg = ctk.CTkButton(frame, text="Primeiro Aluguel", font=("Poppins", 14),
-                                                command=lambda:meses_pagamento(data_inic.get(),id_cliente,valor_aluguel,
+                                                command=lambda:meses_pagamento(data_paga,data_inic.get(),id_cliente,valor_aluguel,
                                                                                primeiro_aluguel,comissao_1,comissao_2,comissao_3,comissao_4,tipo))
             
             botao_criar_meses_pg.grid(row=12,column=0,padx=10,pady=10,sticky="w")
@@ -2107,63 +2108,65 @@ def exibir_informacoes_clientes():
     main_frame = ctk.CTkFrame(criar_frame,fg_color="transparent")
     main_frame.pack(fill="both", expand=True)
 
-    left_frame = ctk.CTkScrollableFrame(main_frame,fg_color="transparent")
-    left_frame.pack(side="left", fill="both",expand=True,ipadx=10,padx=5)
+    left_frame = ctk.CTkScrollableFrame(main_frame)
+    left_frame.pack(side="left", fill="both",expand=True,padx=5)
 
     id_frame = ctk.CTkScrollableFrame(main_frame,fg_color="transparent")
-    id_frame.pack(expand=True,side="left", fill="both",ipadx=40,padx=30)
+    id_frame.pack(expand=True,side="left", fill="both",ipadx=30,padx=5)
 
     info_frame = ctk.CTkScrollableFrame(main_frame,fg_color="transparent",orientation="horizontal")
     info_frame.pack(side="left", expand=True, fill="both",ipadx=500)
     
-    ctk.CTkLabel(left_frame,text="Clientes Geral",font=("Poppins Bold", 16)).grid(row=0,column=0,sticky="w",padx=40,pady=15)
+    ctk.CTkLabel(left_frame,text=" Clientes Geral",font=("Poppins Bold", 16),
+                 image=pessoas_image,anchor="w", compound="left").grid(row=0,column=0,sticky="w",padx=10,pady=15)
 
     botao_mostrar_todos_clientes = ctk.CTkButton(left_frame,text="Todos Clientes",font=("Poppins", 15), 
                                                  command=lambda:mostrar_clientes("Clientes",id_frame,info_frame,None,None))
-    botao_mostrar_todos_clientes.grid(row=1,column=0,sticky="w",padx=40)
+    botao_mostrar_todos_clientes.grid(row=1,column=0,sticky="w",padx=10)
 
 
-    ctk.CTkLabel(left_frame,text="Filtrar ID",font=("Poppins Bold", 15)).grid(row=2,column=0,sticky="w",padx=40,pady=5)
+    ctk.CTkLabel(left_frame,text="Filtrar ID",font=("Poppins Bold", 15)).grid(row=2,column=0,sticky="w",padx=10,pady=5)
     filtro_id = ctk.CTkEntry(left_frame)
-    filtro_id.grid(row=3,column=0,sticky="w",padx=40,pady=5)
+    filtro_id.grid(row=3,column=0,sticky="w",padx=10,pady=5)
 
     botao_mostrar_clientes_id = ctk.CTkButton(left_frame,text="Filtrar",font=("Poppins", 15), 
                                               command=lambda:mostrar_clientes("Clientes",id_frame,info_frame,"id",filtro_id.get()))
-    botao_mostrar_clientes_id.grid(row=4,column=0,sticky="w",padx=40)
+    botao_mostrar_clientes_id.grid(row=4,column=0,sticky="w",padx=10)
 
     #Label Auxiliar
-    ctk.CTkLabel(left_frame,text="").grid(row=5,column=0,padx=40,pady=10)
+    ctk.CTkLabel(left_frame,text="").grid(row=5,column=0,padx=10,pady=10)
     
-    ctk.CTkLabel(left_frame,text="Status Clientes",font=("Poppins Bold", 16)).grid(row=6,column=0,sticky="w",padx=40)
+    ctk.CTkLabel(left_frame,text=" Status Clientes",font=("Poppins Bold", 16),
+                 image=status_image,anchor="w", compound="left").grid(row=6,column=0,sticky="w",padx=10)
 
     botao_mostrar_situa = ctk.CTkButton(left_frame,text="Todos os Status",font=("Poppins", 15),command=lambda:verificar_situacao(None, None, None))
-    botao_mostrar_situa.grid(row=7,column=0,sticky="w",padx=40,pady=10)
+    botao_mostrar_situa.grid(row=7,column=0,sticky="w",padx=10,pady=10)
 
     botao_mostrar_pagos = ctk.CTkButton(left_frame,text="Pagos",font=("Poppins", 15),command=lambda:verificar_situacao(None, "Status", "Pago!"))
-    botao_mostrar_pagos.grid(row=8,column=0,sticky="w",padx=40,pady=10)
+    botao_mostrar_pagos.grid(row=8,column=0,sticky="w",padx=10,pady=10)
 
     botao_mostrar_npagos = ctk.CTkButton(left_frame,text="Não Pagos",font=("Poppins", 15),command=lambda:verificar_situacao(None, "Status", "Aguardando Pg."))
-    botao_mostrar_npagos.grid(row=9,column=0,sticky="w",padx=40,pady=10)
+    botao_mostrar_npagos.grid(row=9,column=0,sticky="w",padx=10,pady=10)
 
-    ctk.CTkLabel(left_frame,text="",font=("Poppins Bold", 15)).grid(row=10,column=0,sticky="w",padx=40,pady=10)
+    ctk.CTkLabel(left_frame,text="",font=("Poppins Bold", 15)).grid(row=10,column=0,sticky="w",padx=10,pady=0)
 
-    ctk.CTkLabel(left_frame,text=" Filtrar Mês (Status)",font=("Poppins Bold", 15)).grid(row=11,column=0,sticky="w",padx=40,pady=5)
+    ctk.CTkLabel(left_frame,text=" Filtrar Mês (Status)",font=("Poppins Bold", 15)).grid(row=11,column=0,sticky="w",padx=10,pady=5)
 
     filtro_mes = ctk.CTkEntry(left_frame,placeholder_text="01,02,03...", placeholder_text_color="gray")
-    filtro_mes.grid(row=12,column=0,sticky="w",padx=40,pady=5)
+    filtro_mes.grid(row=12,column=0,sticky="w",padx=10,pady=5)
     botao_filtrar_mes = ctk.CTkButton(left_frame,text="Filtrar", font=("Poppins", 15),command=lambda:verificar_situacao(None,"Data",filtro_mes.get()))
-    botao_filtrar_mes.grid(row=13,column=0,sticky="w",padx=40)
+    botao_filtrar_mes.grid(row=13,column=0,sticky="w",padx=10)
 
-    ctk.CTkLabel(left_frame,text="",font=("Poppins Bold", 15)).grid(row=14,column=0,sticky="w",padx=40,pady=0)
+    ctk.CTkLabel(left_frame,text="",font=("Poppins Bold", 15)).grid(row=14,column=0,sticky="w",padx=10,pady=0)
 
-    ctk.CTkLabel(left_frame,text=" Filtrar dia (Status)",font=("Poppins Bold", 15)).grid(row=15,column=0,sticky="w",padx=40,pady=5)
+    ctk.CTkLabel(left_frame,text=" Filtrar dia (Status)",font=("Poppins Bold", 15)).grid(row=15,column=0,sticky="w",padx=10,pady=5)
     filtro_dia = ctk.CTkEntry(left_frame)
-    filtro_dia.grid(row=16,column=0,sticky="w",padx=40,pady=5)
+    filtro_dia.grid(row=16,column=0,sticky="w",padx=10,pady=5)
 
     filtro_dia.bind("<KeyRelease>", lambda event: formatar_data_entry(filtro_dia,event))
 
     botao_filtrar_dia = ctk.CTkButton(left_frame,text="Filtrar", font=("Poppins", 15),command=lambda:verificar_situacao(None,"Dia",filtro_dia.get()))
-    botao_filtrar_dia.grid(row=17,column=0,sticky="w",padx=40)
+    botao_filtrar_dia.grid(row=17,column=0,sticky="w",padx=10)
 
     mostrar_clientes("Clientes",id_frame,info_frame,None,None)
 
@@ -2282,7 +2285,7 @@ def mostrar_entradas_saidas():
     frame_principal = ctk.CTkScrollableFrame(criar_frame,fg_color="transparent")
     frame_principal.pack(fill="both",expand=True,side="right",ipadx=350)
 
-    left_frame = ctk.CTkFrame(criar_frame,fg_color="transparent",border_width=5,border_color="#C0C0C0")
+    left_frame = ctk.CTkFrame(criar_frame,border_color="#C0C0C0")
     left_frame.pack(fill="both",expand=True, side="left")
 
     frame_filtro = ctk.CTkFrame(left_frame, fg_color="transparent",width=140,height=200)
@@ -2345,7 +2348,7 @@ def mostrar_entradas_saidas():
 
         for i, header in enumerate(headers):
             label = ctk.CTkLabel(frame_principal, text=header, width=5, corner_radius=5, fg_color="gray70", font=("Poppins Bold", 14))
-            label.grid(row=0, column=i, padx=5, pady=5, sticky="nsew")
+            label.grid(row=0, column=i, padx=3, pady=5, sticky="nsew")
 
         for row_index, row_data in enumerate(resultados, start=1):
             chk_var = ctk.IntVar()
@@ -2358,7 +2361,7 @@ def mostrar_entradas_saidas():
             
             for col_index, data in enumerate(row_data[1:]):  
                 label = ctk.CTkLabel(frame_principal, text=data, corner_radius=5, font=("Poppins", 13))
-                label.grid(row=row_index, column=col_index + 1, padx=5, pady=5, sticky="nsew")
+                label.grid(row=row_index, column=col_index + 1, padx=0, pady=5, sticky="nsew")
 
         def deletar_selecionados():
 
@@ -2912,7 +2915,7 @@ def info_corretor(cpf,frame):
 
     botao_rela = ctk.CTkButton(frame,text="Mostrar Relatório",corner_radius=15,font=('Poppins', 15),width=150,height=30,image=file_image,
                                 anchor="w", compound="left", command=lambda:gerar_relatorio_comissoes(id))
-    botao_rela.place(x=50,y=615)
+    botao_rela.place(x=30,y=615)
 
     def deletar_corretor():
 
@@ -2951,18 +2954,34 @@ def info_corretor(cpf,frame):
 
     botao_deletar =  ctk.CTkButton(frame,text="Deletar Corretor", font=("Poppins", 15),corner_radius=15,
                                         width=150,height=30, fg_color="#b95557", hover_color="#bd3038",command= deletar_corretor)
-    botao_deletar.place(x=500,y=615)
+    botao_deletar.place(x=430,y=615)
 
     botao_mudar = ctk.CTkButton(frame,text="Alterar Dados", font=("Poppins", 15),corner_radius=15,
                                                 width=150,height=30,command=lambda:alterar_dados_corretor_ui(id))
-    botao_mudar.place(x=300,y=615)
+    botao_mudar.place(x=240,y=615)
 
     botao_reset = ctk.CTkButton(frame,text="Resetar Dados", font=("Poppins", 15),corner_radius=15,
-                                    width=160,height=30, command=resetar)
-    botao_reset.place(x=500,y=500)
+                                    width=150,height=30,fg_color="#b95557", hover_color="#bd3038", command=resetar)
+    botao_reset.place(x=620,y=615)
+
+    botao_mudar_foto = ctk.CTkButton(frame,text="Mudar foto", font=("Poppins", 15),corner_radius=15,
+                                                width=150,height=30,command=lambda:alterar_foto(id))
+    botao_mudar_foto.place(x=445,y=460)
 
 
+def alterar_foto(cpf_corretor):
+    conex = sqlite3.connect('Banco_de_Dados.db')
+    cursor = conex.cursor()
 
+    foto_nova = filedialog.askopenfilename(title="Selecionar Foto", filetypes=[("Image Files", "*.png;*.jpg;*.jpeg;*.bmp")])
+    cursor.execute("UPDATE corretores SET foto = ? WHERE cpf = ?", (foto_nova, cpf_corretor))
+
+    conex.commit()
+
+    messagebox.showinfo("Sucesso", "Foto atualizada com sucesso.")
+
+    conex.close()
+    mostrar_corretores()
 
 def alterar_dados_corretor_ui(cpf_corretor):
 
@@ -3167,7 +3186,7 @@ ctk.set_appearance_mode("light")
 
 add_image = ctk.CTkImage(Image.open("imagens/user.png"), size=(40,40))
 key_image = ctk.CTkImage(Image.open("imagens/key.png"), size=(40,40))
-money_image = ctk.CTkImage(Image.open("imagens/money.png"), size=(20,20))
+money_image = ctk.CTkImage(Image.open("imagens/money.png"), size=(25,25))
 file_image = ctk.CTkImage(Image.open("imagens/file.png"), size=(20,20))
 crown_image = ctk.CTkImage(Image.open("imagens/crown.png"), size=(20,20))
 primeiro_image = ctk.CTkImage(Image.open("imagens/medal.png"), size=(30,30))
@@ -3177,6 +3196,8 @@ settings_image = ctk.CTkImage(Image.open("imagens/settings.png"), size=(30,30))
 info_image = ctk.CTkImage(Image.open("imagens/info.png"), size=(20,20))
 corret_image = ctk.CTkImage(Image.open("imagens/corret.png"), size=(20,20))
 edit_image = ctk.CTkImage(Image.open("imagens/edit.png"), size=(20,20))
+pessoas_image = ctk.CTkImage(Image.open("imagens/pessoas.png"), size=(30,30))
+status_image = ctk.CTkImage(Image.open("imagens/plano.png"), size=(30,30))
 
 
 main_frame = ctk.CTkFrame(tela,fg_color="transparent")
